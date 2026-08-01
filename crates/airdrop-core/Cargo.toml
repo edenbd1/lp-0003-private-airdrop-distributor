@@ -1,0 +1,19 @@
+[package]
+name = "airdrop-core"
+description = "Shared primitives for LP-0003: private allowlist / airdrop eligibility, claim proofs, and double-claim nullifiers over the LEZ private-account commitment format."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+serde = { workspace = true }
+serde-big-array = { workspace = true }
+sha2 = { workspace = true }
+hex = { workspace = true }
+
+[features]
+default = ["std"]
+std = ["serde/std", "hex/std"]
+
+[dev-dependencies]
+bincode = { version = "2", features = ["serde"] }
