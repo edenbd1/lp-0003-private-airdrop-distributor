@@ -31,9 +31,11 @@ LOGOS_MODULE_BUILDER_ROOT=/path/to/logos-module-builder cmake -B build
 cmake --build build          # produces lp_0003_airdrop.lgx
 ```
 
-The packaged `.lgx` is not committed here because that toolchain is not in this
-repository's CI environment; it is produced by the command above, exactly as the
-LP-0005 app's `.lgx` was.
+The packaged `.lgx` **is committed** at `app/lp-0003-airdrop.lgx` (built with the
+command above; the module-builder toolchain is not in this repository's CI, so the
+asset is committed rather than rebuilt on every push). It carries the
+`darwin-arm64` variant; on another platform, rebuild with the command above or use
+the cross-platform CLI.
 
 ### Standalone build (developer preview)
 
