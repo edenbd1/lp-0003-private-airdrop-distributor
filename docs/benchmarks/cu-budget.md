@@ -8,12 +8,12 @@ same inputs, same 32M session limit, same executor
 performs, measured rather than reported by the node.
 
 Measured against the deployed `claim_verifier.bin`
-(ImageID `66ea2b79…e1dba7db`):
+(ImageID `a7b7cf26…6fe7b77d`):
 
 | Metric | `claim` |
 |---|---|
 | Segments | 1 |
-| **User cycles** | **293,653** |
+| **User cycles** | **333,565** |
 | **Proving cycles (sum of 2^po2)** | **524,288** |
 | Public execution budget | 33,554,432 |
 | **Budget consumed (proving cycles)** | **1.56 %** |
