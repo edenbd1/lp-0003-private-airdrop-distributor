@@ -223,6 +223,15 @@ pub struct ClaimStatement {
     pub nullifier: [u8; 32],
 }
 
+/// The instruction a claim proof runs over: the private witness plus the public
+/// statement it must satisfy. The LEZ-native guest reads this, calls [`claim`],
+/// and emits a `ProgramOutput` the privacy circuit composes with `env::verify`.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct ClaimInstruction {
+    pub witness: ClaimWitness,
+    pub statement: ClaimStatement,
+}
+
 /// Errors a claim proof can fail with, mapped to on-chain codes by the verifier.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ClaimError {
