@@ -141,40 +141,30 @@ génère une vraie preuve.
 
 > "The demo executed the logic; it did not prove. Proving is the expensive part, so let me generate a real one now, live, with dev mode still off."
 
-**🎬 ACTION** : Lance un vrai claim de bout en bout (compte financé nécessaire) :
+**🎬 ACTION** : Lance la génération d'une vraie preuve (compte financé requis ;
+`SIGNER`, `CLAIMANT` et `wallet`/`spel` déjà en place) :
 
 ```bash
-export RISC0_DEV_MODE=0
-./scripts/deploy-and-claim.sh
+export SIGNER=<ton public id financé> CLAIMANT=<ton private id autorisé>
+./scripts/prove-one-claim.sh
 ```
 
 **💬 SAY** (pendant que ça démarre) :
 
-> "This commits a fresh distribution and then proves and submits real claims against it. Watch the proving step — it takes about two and a half minutes per claim on this laptop, because it generates a real STARK and then the privacy circuit recursively verifies the chained call inside it."
+> "This commits one fresh distribution, then proves and submits a single real claim against it. Watch the proving step — about two and a half minutes on this laptop, because it generates a real STARK, and the privacy circuit then recursively verifies the chained call inside it. Dev mode is off, so these are real proofs."
 
-> **🎬 NOTE POST-PROD** : l'attente de proving (~2-3 min) doit être **accélérée en
-> post** (×8 à ×16), MAIS le terminal doit rester visible et continu — on ne coupe
-> pas, on accélère, pour qu'il soit clair que rien n'est truqué.
+> **🎬 NOTE POST-PROD** : l'attente de proving (~2-3 min, ligne `proving locally...`)
+> doit être **accélérée en post** (×8 à ×16), MAIS le terminal reste visible et
+> continu — on ne coupe pas, on accélère, pour qu'il soit clair que rien n'est
+> truqué.
 
-**🎬 ACTION** : Quand un `tx_hash` apparaît et que le script confirme, prends-le.
+**🎬 ACTION** : Le script imprime `proved + submitted in NNNs`, attend
+l'atterrissage, puis lance lui-même la vérification cinq-sur-cinq. Laisse-la
+s'afficher jusqu'à `VERIFIED`.
 
-**💬 SAY** :
+**💬 SAY** (quand le `VERIFIED` apparaît) :
 
-> "There it is — a claim landed. Real proof, dev mode off, submitted on the privacy path. Now, don't take my script's word for it."
-
-**🎬 ACTION** : Copie le `tx_hash` et son nullifier depuis la sortie, puis tape
-(remplace les valeurs par celles à l'écran) :
-
-```bash
-CLAIM_TX=<le tx affiché> \
-NULLIFIER=<le nullifier affiché> \
-DISTRIBUTION_ID=b100000000000000000000000000000000000000000000000000000000000001 \
-./scripts/verify-onchain-claim.sh
-```
-
-**💬 SAY** :
-
-> "That's the raw chain over R-P-C. Privacy-preserving, a Succinct STARK the sequencer verified, and the marker owned by the verifier. The block explorer would show this as *not found* — by design, because a privacy transaction publishes no data. That is why verification reads the chain directly."
+> "There it is. A real proof, dev mode off, submitted on the privacy path — and the script reads it straight back off the chain. Privacy-preserving, a Succinct STARK the sequencer verified, and the marker owned by the verifier. The block explorer would show this same transaction as *not found* — by design, because a privacy transaction publishes no data. That is why verification reads the chain directly."
 
 ---
 
