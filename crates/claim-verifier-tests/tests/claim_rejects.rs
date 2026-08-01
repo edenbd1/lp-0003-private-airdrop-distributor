@@ -189,6 +189,86 @@ impl Scenario {
         default_executor().execute(env, elf)?;
         Ok(())
     }
+
+    /// Same execution as `run`, but returns the session so its cycle counts can be
+    /// reported. Only used by the honest measurement.
+    fn measured_session(
+        &self,
+        elf: &[u8],
+        pid: &ProgramId,
+    ) -> anyhow::Result<risc0_zkvm::SessionInfo> {
+        let instruction = VerifierInstruction::Claim {
+            witness_words: risc0_zkvm::serde::to_vec(&airdrop_core::ClaimInstruction {
+                witness: self.witness.clone(),
+                statement: ClaimStatement {
+                    distribution_root: self.distribution_root,
+                    distribution_id: self.distribution_id,
+                    allocation: self.allocation,
+                    nullifier: self.nullifier,
+                },
+            })?,
+            distribution_root: self.distribution_root,
+            distribution_id: self.distribution_id,
+            allocation: self.allocation,
+            nullifier: self.nullifier,
+            claim_marker_seed: self.marker_seed,
+        };
+        let pre_states = vec![
+            AccountWithMetadata {
+                account: Account::default(),
+                is_authorized: false,
+                account_id: public_pda(pid, &[self.marker_seed]),
+            },
+            AccountWithMetadata {
+                account: Account {
+                    program_owner: self.distribution_owner,
+                    balance: 0,
+                    data: Default::default(),
+                    nonce: lee_core::account::Nonce(0),
+                },
+                is_authorized: false,
+                account_id: public_pda(pid, &[self.distribution_id, self.distribution_root]),
+            },
+            AccountWithMetadata {
+                account: Account::default(),
+                is_authorized: true,
+                account_id: AccountId::new([0xC1; 32]),
+            },
+        ];
+        let caller: Option<ProgramId> = None;
+        let instruction_data = risc0_zkvm::serde::to_vec(&instruction)?;
+        let mut builder = ExecutorEnv::builder();
+        builder.session_limit(Some(MAX_NUM_CYCLES_PUBLIC_EXECUTION));
+        builder.write(pid)?;
+        builder.write(&caller)?;
+        builder.write(&pre_states)?;
+        builder.write(&instruction_data)?;
+        Ok(default_executor().execute(builder.build()?, elf)?)
+    }
+}
+
+/// Report the deployed claim verifier's on-chain compute cost, by replaying its
+/// execution through the sequencer's own executor. This is the Performance
+/// criterion's number: the guest's own cycles, excluding the privacy circuit's
+/// recursive verification of the chained call, which is LEZ's cost not ours.
+///
+/// Run with: `cargo test -p claim-verifier-tests --test claim_rejects -- --ignored --nocapture`
+#[test]
+#[ignore = "reports a measurement rather than asserting a property"]
+fn report_the_claim_cycle_cost() {
+    let elf = elf();
+    let pid = program_id(&elf);
+    let session = Scenario::honest(&pid)
+        .measured_session(&elf, &pid)
+        .expect("honest claim executes");
+    let user_cycles: u64 = session.segments.iter().map(|s| u64::from(s.cycles)).sum();
+    let proving_cycles: u64 = session.segments.iter().map(|s| 1u64 << s.po2).sum();
+    let pct = proving_cycles as f64 / MAX_NUM_CYCLES_PUBLIC_EXECUTION as f64 * 100.0;
+    println!("claim verifier, guest execution only");
+    println!("  segments        {}", session.segments.len());
+    println!("  user cycles     {user_cycles}");
+    println!("  proving cycles  {proving_cycles}");
+    println!("  budget consumed {pct:.2} % of {MAX_NUM_CYCLES_PUBLIC_EXECUTION}");
 }
 
 /// The control. If an honest claim is rejected, every rejection below is meaningless.
