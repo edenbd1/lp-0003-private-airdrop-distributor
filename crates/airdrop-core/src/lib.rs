@@ -294,6 +294,15 @@ pub fn claim(witness: &ClaimWitness, statement: &ClaimStatement) -> Result<[u8; 
     Ok(leaf)
 }
 
+/// A recipient's Merkle authentication path: their leaf index and the sibling
+/// hashes from the leaf up to the root.
+#[cfg(feature = "std")]
+pub type MerklePath = (u64, Vec<[u8; 32]>);
+
+/// A built eligibility tree: the root, plus each original leaf's [`MerklePath`].
+#[cfg(feature = "std")]
+pub type EligibilityTree = ([u8; 32], Vec<MerklePath>);
+
 /// Distributor-side helper: build a Merkle tree over the eligibility leaves and
 /// return the root plus, for each leaf, its `(leaf_index, siblings)` path. Pads
 /// to a power of two with a fixed sentinel so paths are well-formed. Kept host
@@ -301,7 +310,7 @@ pub fn claim(witness: &ClaimWitness, statement: &ClaimStatement) -> Result<[u8; 
 /// root.
 #[cfg(feature = "std")]
 #[must_use]
-pub fn build_eligibility_tree(leaves: &[[u8; 32]]) -> ([u8; 32], Vec<(u64, Vec<[u8; 32]>)>) {
+pub fn build_eligibility_tree(leaves: &[[u8; 32]]) -> EligibilityTree {
     assert!(!leaves.is_empty(), "an eligibility set needs at least one entry");
 
     // Pad to a power of two with a domain-separated sentinel that no real leaf
@@ -319,7 +328,7 @@ pub fn build_eligibility_tree(leaves: &[[u8; 32]]) -> ([u8; 32], Vec<(u64, Vec<[
     let width = level.len();
 
     // Record each original leaf's path as we fold up.
-    let mut paths: Vec<(u64, Vec<[u8; 32]>)> = (0..leaves.len())
+    let mut paths: Vec<MerklePath> = (0..leaves.len())
         .map(|i| (i as u64, Vec::new()))
         .collect();
 
