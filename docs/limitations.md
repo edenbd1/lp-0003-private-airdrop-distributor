@@ -14,6 +14,27 @@ Actually moving `N` tokens to that destination is the integration's job; what th
 primitive guarantees is that the destination a claim commits to cannot be changed
 by the submission.
 
+Be precise about the scope: the destination is committed inside the proof, but it
+is **not** published (a privacy transaction carries no instruction data) and it is
+**not** folded into the marker PDA seed (the seed is
+`H(prefix || distribution_id || nullifier)` only). So no on-chain observer or
+later transaction can read the bound destination from the marker alone. The
+binding is useful to a token-delivery step that runs in the **same** transaction
+as the claim, where it can consume the proven destination; it is not a standalone
+on-chain record an unrelated integrator can look up. Adding the destination to the
+marker seed, or emitting a delivery in the claim itself, is the natural extension
+for an integration that needs the destination to be publicly enforceable.
+
+## The encrypted bundle reveals the number of recipients
+
+`airdrop demo-distribution` emits one encrypted row per recipient. An observer of
+the published bundle therefore learns the exact **cardinality** of the eligibility
+set, even though they learn nothing about who is eligible or any allocation. If
+the set size is itself sensitive, pad the bundle with dummy rows: `airdrop
+demo-distribution --pad <n>` rounds the row count up to a multiple of `n` with
+rows sealed to random keys that never open for anyone, so the published count no
+longer reveals the real one.
+
 ## Unlinkability is against passive observers, not voluntary disclosure
 
 The nullifier is secret-bound, so an observer who knows the candidate set cannot

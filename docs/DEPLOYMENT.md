@@ -25,13 +25,27 @@ transactions, which is what `scripts/verify-onchain-claim.sh` step 1 checks.
 
 ## Distributions and claims
 
-Two distributions are committed on chain with `create_distribution`; each commits
-only its eligibility root, in a PDA whose address is `[distribution_id, root]`.
+Two distributions are committed on chain under the **current** verifier
+(ImageID `a7b7cf26…`) with `create_distribution`; each commits only its
+eligibility root, in a PDA whose address is `[distribution_id, root]` derived
+from the verifier's own program id.
 
-| Distribution | id | recipients | create_distribution tx | distribution PDA (owned by verifier) |
-|---|---|---|---|---|
-| 1 | `a1…0001` | 12 | `49ea47687885df9a7259d4b149cebab60e99b070c481fdac5e751478c0645274` | `6DSxTiaCfZkCp2yxuDbLz2j8da8VYkvimZpx1wQk5uWy` |
-| 2 | `a2…0002` | 10 | `ecc5782fa230e4304b81b5471ab4b02cf59a03e98031dfbefc19f060a40521d1` | (derived from its root) |
+| Distribution | id | recipients | create_distribution tx |
+|---|---|---|---|
+| 1 | `b1…0001` | 12 | `2fad9747f7f39d8935b8a760146abd851e3e3235856a924ef625138a64cc6309` |
+| 2 | `b2…0002` | 10 | `72a32e082ae387428226853be81d6aa1f56796da96eb1c2a50e30a743ca27e78` |
+
+> An earlier pair of distributions (`a1…`, `a2…`) was committed under a previous
+> verifier ImageID (`66ea2b79…`), before the destination binding was added and
+> the verifier redeployed. Because a distribution PDA is derived from the
+> verifier's own program id, those are not claimable under the current binary and
+> are not used here. The distributions above are the ones under the deployed
+> verifier.
+
+The full list of live claims across these two distributions, each verifiable with
+`verify-onchain-claim.sh`, is committed at
+[`artifacts/e2e/claims.tsv`](../artifacts/e2e/claims.tsv) as
+`distribution_id, claim_tx, nullifier`.
 
 A claim is a **privacy-preserving** transaction: its instruction data is not
 published, and its only public trace is the claim marker PDA, owned by the

@@ -92,3 +92,16 @@ fn the_recovered_payload_reconstructs_the_committed_leaf() {
         compute_eligibility_leaf(&account_id, opened.allocation, &opened.salt);
     assert_eq!(recovered_leaf, committed_leaf);
 }
+
+/// A padding row opens for no one, so a bundle padded with them hides the true
+/// recipient count while every real recipient still finds their row.
+#[test]
+fn padding_rows_open_for_no_one() {
+    use airdrop_crypto::dummy_row;
+    let row = dummy_row();
+    for nsk in [[1u8; 32], [2u8; 32], [255u8; 32]] {
+        assert!(decrypt_row(&derive_enc_keypair(&nsk), &row).is_none());
+    }
+    // Two dummies differ, so padding does not add identical rows.
+    assert_ne!(dummy_row().ciphertext, dummy_row().ciphertext);
+}
