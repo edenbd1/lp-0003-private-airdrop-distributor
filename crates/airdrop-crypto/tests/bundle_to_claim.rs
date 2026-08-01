@@ -82,3 +82,77 @@ fn a_recipient_claims_from_only_the_bundle_and_their_secret() {
     assert!(claim(&witness, &statement).is_ok());
     assert_eq!(recovered.allocation, allocs[me]);
 }
+
+/// The hardened recipient scan keeps the row that *anchors* to the committed
+/// root, not merely the first that decrypts, so junk or maliciously crafted rows
+/// injected into the open bundle do not break an eligible recipient. This mirrors
+/// the CLI `claim-from-bundle` scan against the real functions.
+#[test]
+fn the_scan_skips_junk_and_finds_the_anchoring_row() {
+    use airdrop_crypto::{dummy_row, EncryptedRow};
+
+    let n = 8usize;
+    let (mut nsks, mut allocs, mut salts, mut leaves) = (vec![], vec![], vec![], vec![]);
+    for i in 0..n {
+        let nsk = [i as u8 + 1; 32];
+        let alloc = 200u128 + i as u128 * 3;
+        let salt = [0x50 ^ i as u8; 32];
+        let aid = derive_account_id(&derive_npk(&nsk), 0);
+        leaves.push(compute_eligibility_leaf(&aid, alloc, &salt));
+        nsks.push(nsk);
+        allocs.push(alloc);
+        salts.push(salt);
+    }
+    let (root, paths) = build_eligibility_tree(&leaves);
+
+    let mut bundle: Vec<EncryptedRow> = (0..n)
+        .map(|i| {
+            let payload = RowPayload {
+                allocation: allocs[i],
+                salt: salts[i],
+                leaf_index: paths[i].0,
+                merkle_path: paths[i].1.clone(),
+            };
+            encrypt_row(&enc_public_key(&nsks[i]), &serde_json::to_vec(&payload).unwrap(), None)
+        })
+        .collect();
+    // Adversarial noise: a low-order header that (without the contributory check)
+    // would open for everyone with garbage, and a padding row that opens for no
+    // one. The low-order header sorts to the front of the published bundle.
+    bundle.push(EncryptedRow { ephemeral_public: [0u8; 32], nonce: [0u8; 12], ciphertext: vec![7u8; 64] });
+    bundle.push(dummy_row());
+    bundle.sort_by_key(|r| r.ephemeral_public);
+
+    // Recipient side: the hardened scan takes the first row that decrypts AND
+    // anchors, skipping the junk rows even though one sorts ahead of the real one.
+    let me = 5usize;
+    let my_nsk = nsks[me];
+    let keys = derive_enc_keypair(&my_nsk);
+    let nullifier = compute_claim_nullifier(&DIST_ID, &my_nsk);
+    let recovered = bundle
+        .iter()
+        .filter_map(|r| {
+            let payload: RowPayload = serde_json::from_slice(&decrypt_row(&keys, r)?).ok()?;
+            let witness = ClaimWitness {
+                nsk: my_nsk,
+                identifier: 0,
+                allocation: payload.allocation,
+                salt: payload.salt,
+                merkle_path: payload.merkle_path.clone(),
+                leaf_index: payload.leaf_index,
+                destination: [0xDE; 32],
+            };
+            let statement = ClaimStatement {
+                distribution_root: root,
+                distribution_id: DIST_ID,
+                allocation: payload.allocation,
+                nullifier,
+                destination: [0xDE; 32],
+            };
+            claim(&witness, &statement).ok()?;
+            Some(payload)
+        })
+        .next()
+        .expect("the eligible recipient still finds their anchoring row despite the junk");
+    assert_eq!(recovered.allocation, allocs[me]);
+}
