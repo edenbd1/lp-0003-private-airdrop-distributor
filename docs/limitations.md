@@ -35,6 +35,14 @@ demo-distribution --pad <n>` rounds the row count up to a multiple of `n` with
 rows sealed to random keys that never open for anyone, so the published count no
 longer reveals the real one.
 
+Be precise about what padding hides: it defeats a **counter**, not a **measurer**.
+A dummy row is a fixed length, while a real row's ciphertext grows with the tree
+depth and the serialized allocation, so an observer who groups rows by length can
+still separate real rows from padding and recover the true count. Full
+length-indistinguishability would require sealing every row (real and dummy) at a
+single constant plaintext length; the current padding hides the count only against
+an observer who does not exploit row length.
+
 ## Unlinkability is against passive observers, not voluntary disclosure
 
 The nullifier is secret-bound, so an observer who knows the candidate set cannot
@@ -74,3 +82,31 @@ The eligibility tree is a binary SHA-256 Merkle tree; proof size and in-guest
 folding cost grow with `log2(set size)`. The tree builder pads to a power of two
 with a domain-separated sentinel that commits to no account, so padding entries
 can never be claimed.
+
+## Deferred hardenings (non-exploitable, would re-key the deployment)
+
+An adversarial review confirmed no bypass of the claim's security properties. The
+items below are defence-in-depth, none of them exploitable as built, and each one
+is deferred because it changes a guest ImageID: because a distribution PDA and a
+marker PDA are both derived from the verifier's program id, redeploying the
+verifier re-keys every committed distribution and invalidates the live claims.
+They are recorded here so the trade-off is explicit rather than hidden.
+
+- **Reject the public path in the verifier program.** The claim carries `nsk` in
+  its witness and is safe only on the privacy path (see
+  [`privacy-model.md`](privacy-model.md)). The program does not itself refuse a
+  public-path invocation; the tooling never issues one. Enforcing it in-program
+  (checking the caller against the privacy circuit id) would make the guarantee
+  structural instead of procedural.
+- **Anchor check compares against `DEFAULT` rather than `self`.** The claim
+  requires the distribution PDA to be non-default-owned; it does not additionally
+  assert the owner *is this verifier*. That is safe today because a PDA address
+  embeds the program id, so a `[distribution_id, root]` PDA in this program's
+  namespace can only be owned by `DEFAULT` or this program. The stricter check is
+  a belt-and-suspenders nicety.
+- **Domain-separate internal Merkle nodes.** Leaves are prefixed
+  (`ELIGIBILITY_LEAF_PREFIX`); internal nodes are a bare `SHA256(L || R)`. This is
+  not exploitable because the guest always *recomputes* the leaf from the account,
+  allocation, and salt and never accepts a prover-supplied leaf value, so an
+  internal node cannot be presented as a leaf. Prefixing internal nodes would keep
+  that safe even if a future code path accepted a raw leaf.
