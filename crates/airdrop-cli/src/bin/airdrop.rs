@@ -42,6 +42,10 @@ enum Cmd {
         base: u128,
         #[arg(long, default_value_t = 10)]
         step: u128,
+        /// Pad the published bundle up to a multiple of this many rows with dummy
+        /// rows, so the row count does not reveal the true number of recipients.
+        #[arg(long, default_value_t = 1)]
+        pad: usize,
         /// Output directory for distribution.json and recipients.json.
         #[arg(long)]
         out: String,
@@ -114,6 +118,7 @@ fn demo_distribution(
     id: [u8; 32],
     base: u128,
     step: u128,
+    pad: usize,
     out: &str,
 ) -> Result<()> {
     let mut recipients = Vec::new();
@@ -183,7 +188,14 @@ fn demo_distribution(
             ))
         })
         .collect::<Result<_>>()?;
-    // Shuffle by a hash of the ephemeral key so bundle order is not the tree order.
+    // Pad with indistinguishable dummy rows so the published count does not reveal
+    // the real number of recipients, then shuffle so order carries nothing.
+    if pad > 1 {
+        let target = bundle.len().div_ceil(pad) * pad;
+        while bundle.len() < target {
+            bundle.push(airdrop_crypto::dummy_row());
+        }
+    }
     bundle.sort_by_key(|row| row.ephemeral_public);
     std::fs::write(
         format!("{out}/bundle.json"),
@@ -351,8 +363,8 @@ fn claim_args(dir: &str, index: usize, out: &str) -> Result<()> {
 fn main() -> Result<()> {
     let cli = Cli::parse();
     match cli.cmd {
-        Cmd::DemoDistribution { count, id, base, step, out } => {
-            demo_distribution(count, hex32(&id)?, base, step, &out)
+        Cmd::DemoDistribution { count, id, base, step, pad, out } => {
+            demo_distribution(count, hex32(&id)?, base, step, pad, &out)
         }
         Cmd::ClaimArgs { dir, index, out } => claim_args(&dir, index, &out),
         Cmd::ClaimFromBundle { dir, nsk, out } => claim_from_bundle(&dir, &nsk, &out),

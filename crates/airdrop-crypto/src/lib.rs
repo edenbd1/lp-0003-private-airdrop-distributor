@@ -128,6 +128,20 @@ pub fn encrypt_row(
     }
 }
 
+/// A padding row that no one can open: it is sealed to a fresh random public key
+/// whose secret is discarded. Indistinguishable from a real row, so padding a
+/// bundle with these hides the true number of recipients.
+#[must_use]
+pub fn dummy_row() -> EncryptedRow {
+    let mut throwaway_pk_seed = [0u8; 32];
+    os_random(&mut throwaway_pk_seed);
+    let throwaway_pk = PublicKey::from(&StaticSecret::from(throwaway_pk_seed)).to_bytes();
+    // Encrypt a plausible-length blob to a key whose secret nobody keeps.
+    let mut blob = [0u8; 160];
+    os_random(&mut blob);
+    encrypt_row(&throwaway_pk, &blob, None)
+}
+
 /// Try to open `row` with the recipient's keypair. Returns the plaintext if this
 /// row is addressed to them (the AEAD tag verifies), or `None` otherwise. A
 /// recipient calls this on each row in a bundle; the one that returns `Some` is
