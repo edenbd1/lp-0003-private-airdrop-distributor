@@ -129,8 +129,11 @@ pub fn encrypt_row(
 }
 
 /// A padding row that no one can open: it is sealed to a fresh random public key
-/// whose secret is discarded. Indistinguishable from a real row, so padding a
-/// bundle with these hides the true number of recipients.
+/// whose secret is discarded. Padding a bundle with these hides the recipient
+/// count from an observer who counts rows. It does not hide the count from an
+/// observer who measures row length: this dummy is a fixed size while real rows
+/// vary with tree depth, so full length-indistinguishability needs constant-size
+/// payloads (see `docs/limitations.md`).
 #[must_use]
 pub fn dummy_row() -> EncryptedRow {
     let mut throwaway_pk_seed = [0u8; 32];
@@ -150,9 +153,17 @@ pub fn dummy_row() -> EncryptedRow {
 pub fn decrypt_row(keys: &EncKeypair, row: &EncryptedRow) -> Option<Vec<u8>> {
     let shared = keys
         .secret
-        .diffie_hellman(&PublicKey::from(row.ephemeral_public))
-        .to_bytes();
-    let key = kdf(&shared, &row.ephemeral_public);
+        .diffie_hellman(&PublicKey::from(row.ephemeral_public));
+    // Refuse a non-contributory (low-order / all-zero) shared secret. A crafted
+    // low-order `ephemeral_public` collapses the ECDH output to the same fixed
+    // value for *every* recipient, so one such row would otherwise open for
+    // everyone and defeat the "opens only for the addressed recipient" contract.
+    // Rejecting it keeps that contract even against a row an attacker injected
+    // into the open bundle; an honest ephemeral key is always contributory.
+    if !shared.was_contributory() {
+        return None;
+    }
+    let key = kdf(shared.as_bytes(), &row.ephemeral_public);
     let cipher = ChaCha20Poly1305::new((&key).into());
     cipher
         .decrypt(Nonce::from_slice(&row.nonce), row.ciphertext.as_ref())

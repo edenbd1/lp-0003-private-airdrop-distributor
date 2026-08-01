@@ -7,7 +7,7 @@
 
 use airdrop_core::{compute_eligibility_leaf, derive_account_id, derive_npk};
 use airdrop_crypto::{
-    decrypt_row, derive_enc_keypair, enc_public_key, encrypt_row, RowPayload,
+    decrypt_row, derive_enc_keypair, enc_public_key, encrypt_row, EncryptedRow, RowPayload,
 };
 
 fn payload() -> Vec<u8> {
@@ -104,4 +104,24 @@ fn padding_rows_open_for_no_one() {
     }
     // Two dummies differ, so padding does not add identical rows.
     assert_ne!(dummy_row().ciphertext, dummy_row().ciphertext);
+}
+
+/// A crafted low-order ephemeral header opens for no one. Without the
+/// contributory check in `decrypt_row`, the all-zero point would collapse every
+/// recipient's ECDH shared secret to the identity, giving them all the same key,
+/// so one injected row would open for everyone. This is the row an attacker would
+/// slip into the open bundle; it must not open.
+#[test]
+fn a_low_order_header_opens_for_no_one() {
+    let row = EncryptedRow {
+        ephemeral_public: [0u8; 32], // low-order point: s * P = identity for any clamped s
+        nonce: [0u8; 12],
+        ciphertext: vec![0u8; 48],
+    };
+    for nsk in [[1u8; 32], [2u8; 32], [42u8; 32], [255u8; 32]] {
+        assert!(
+            decrypt_row(&derive_enc_keypair(&nsk), &row).is_none(),
+            "a low-order ephemeral header must not open for anyone"
+        );
+    }
 }
