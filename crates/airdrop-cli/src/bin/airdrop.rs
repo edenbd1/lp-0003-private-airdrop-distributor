@@ -1,0 +1,234 @@
+//! Host tooling for LP-0003.
+//!
+//! A distributor builds an eligibility tree and publishes its root on chain; a
+//! recipient turns their private entry into the arguments the `claim` instruction
+//! takes. This binary does both halves so the end-to-end flow is scriptable.
+//!
+//!   airdrop demo-distribution --count 12 --id <hex32> --out dist/
+//!   airdrop claim-args --dir dist/ --index 3 --out claim3.args
+//!
+//! The witness is encoded with risc0's serde, byte-for-byte what the guest reads
+//! via `read_lee_inputs`, so the arguments this emits compose correctly on the
+//! privacy path.
+
+use airdrop_core::{
+    build_eligibility_tree, compute_claim_marker, compute_claim_nullifier,
+    compute_eligibility_leaf, derive_account_id, derive_npk, ClaimStatement, ClaimWitness,
+};
+use anyhow::{Context, Result};
+use clap::{Parser, Subcommand};
+use serde::{Deserialize, Serialize};
+
+#[derive(Parser)]
+#[command(name = "airdrop", about = "LP-0003 distributor and claim tooling")]
+struct Cli {
+    #[command(subcommand)]
+    cmd: Cmd,
+}
+
+#[derive(Subcommand)]
+enum Cmd {
+    /// Build a self-contained demo distribution: generate `count` recipients,
+    /// assign allocations, build the tree, and write the distribution root plus
+    /// each recipient's private claim package.
+    DemoDistribution {
+        #[arg(long)]
+        count: usize,
+        /// 32-byte distribution id as hex. Also the on-chain distribution PDA seed.
+        #[arg(long)]
+        id: String,
+        /// Base allocation; recipient i receives base + i*step.
+        #[arg(long, default_value_t = 100)]
+        base: u128,
+        #[arg(long, default_value_t = 10)]
+        step: u128,
+        /// Output directory for distribution.json and recipients.json.
+        #[arg(long)]
+        out: String,
+    },
+    /// Emit the SPEL `claim` arguments for one recipient of a demo distribution.
+    ClaimArgs {
+        /// Directory produced by demo-distribution.
+        #[arg(long)]
+        dir: String,
+        /// Recipient index.
+        #[arg(long)]
+        index: usize,
+        #[arg(long)]
+        out: String,
+    },
+}
+
+#[derive(Serialize, Deserialize)]
+struct DistributionFile {
+    id_hex: String,
+    root_hex: String,
+    count: usize,
+}
+
+#[derive(Serialize, Deserialize)]
+struct Recipient {
+    nsk_hex: String,
+    identifier: u128,
+    allocation: u128,
+    salt_hex: String,
+    leaf_index: u64,
+    merkle_path_hex: Vec<String>,
+}
+
+fn hex32(s: &str) -> Result<[u8; 32]> {
+    let v = hex::decode(s).context("invalid hex")?;
+    anyhow::ensure!(v.len() == 32, "expected 32 bytes, got {}", v.len());
+    let mut a = [0u8; 32];
+    a.copy_from_slice(&v);
+    Ok(a)
+}
+
+fn rand32(tag: &[u8]) -> [u8; 32] {
+    // Domain-separated OS randomness, so demo recipients get distinct secrets.
+    let mut seed = [0u8; 32];
+    getrandom::getrandom(&mut seed).expect("OS randomness");
+    use sha2::{Digest, Sha256};
+    let mut h = Sha256::new();
+    h.update(tag);
+    h.update(seed);
+    h.finalize().into()
+}
+
+fn demo_distribution(
+    count: usize,
+    id: [u8; 32],
+    base: u128,
+    step: u128,
+    out: &str,
+) -> Result<()> {
+    let mut recipients = Vec::new();
+    let mut leaves = Vec::new();
+    for i in 0..count {
+        let nsk = rand32(format!("lp-0003-demo-nsk-{i}").as_bytes());
+        let identifier = 0u128;
+        let allocation = base + step * i as u128;
+        let salt = rand32(format!("lp-0003-demo-salt-{i}").as_bytes());
+        let account_id = derive_account_id(&derive_npk(&nsk), identifier);
+        let leaf = compute_eligibility_leaf(&account_id, allocation, &salt);
+        leaves.push(leaf);
+        recipients.push((nsk, identifier, allocation, salt));
+    }
+
+    let (root, paths) = build_eligibility_tree(&leaves);
+
+    std::fs::create_dir_all(out)?;
+    let dist = DistributionFile {
+        id_hex: hex::encode(id),
+        root_hex: hex::encode(root),
+        count,
+    };
+    std::fs::write(
+        format!("{out}/distribution.json"),
+        serde_json::to_string_pretty(&dist)?,
+    )?;
+
+    let recs: Vec<Recipient> = recipients
+        .into_iter()
+        .enumerate()
+        .map(|(i, (nsk, identifier, allocation, salt))| Recipient {
+            nsk_hex: hex::encode(nsk),
+            identifier,
+            allocation,
+            salt_hex: hex::encode(salt),
+            leaf_index: paths[i].0,
+            merkle_path_hex: paths[i].1.iter().map(hex::encode).collect(),
+        })
+        .collect();
+    std::fs::write(
+        format!("{out}/recipients.json"),
+        serde_json::to_string_pretty(&recs)?,
+    )?;
+
+    println!("distribution id   {}", dist.id_hex);
+    println!("eligibility root  {}", dist.root_hex);
+    println!("recipients        {count}");
+    println!("wrote             {out}/distribution.json, {out}/recipients.json");
+    Ok(())
+}
+
+fn claim_args(dir: &str, index: usize, out: &str) -> Result<()> {
+    let dist: DistributionFile =
+        serde_json::from_slice(&std::fs::read(format!("{dir}/distribution.json"))?)?;
+    let recs: Vec<Recipient> =
+        serde_json::from_slice(&std::fs::read(format!("{dir}/recipients.json"))?)?;
+    let r = recs.get(index).context("recipient index out of range")?;
+
+    let distribution_id = hex32(&dist.id_hex)?;
+    let distribution_root = hex32(&dist.root_hex)?;
+    let nsk = hex32(&r.nsk_hex)?;
+    let salt = hex32(&r.salt_hex)?;
+    let merkle_path: Vec<[u8; 32]> = r
+        .merkle_path_hex
+        .iter()
+        .map(|s| hex32(s))
+        .collect::<Result<_>>()?;
+
+    let nullifier = compute_claim_nullifier(&distribution_id, &nsk);
+    let marker_seed = compute_claim_marker(&distribution_id, &nullifier);
+
+    let witness = ClaimWitness {
+        nsk,
+        identifier: r.identifier,
+        allocation: r.allocation,
+        salt,
+        merkle_path,
+        leaf_index: r.leaf_index,
+    };
+    let statement = ClaimStatement {
+        distribution_root,
+        distribution_id,
+        allocation: r.allocation,
+        nullifier,
+    };
+
+    // Sanity: prove locally that the witness satisfies the statement before
+    // asking the chain to. Fails loudly here rather than after minutes of proving.
+    let leaf = airdrop_core::claim(&witness, &statement)
+        .map_err(|e| anyhow::anyhow!("witness does not satisfy the statement: {e:?}"))?;
+
+    // Encode the witness exactly as the guest reads it.
+    let instruction = airdrop_core::ClaimInstruction {
+        witness: witness.clone(),
+        statement: statement.clone(),
+    };
+    let words: Vec<u32> = risc0_zkvm::serde::to_vec(&instruction)?;
+
+    let hexq = |b: &[u8; 32]| format!("'{}'", hex::encode(b));
+    let lines = [
+        format!(
+            "--witness-words '{}'",
+            words.iter().map(u32::to_string).collect::<Vec<_>>().join(",")
+        ),
+        format!("--distribution-root {}", hexq(&distribution_root)),
+        format!("--distribution-id {}", hexq(&distribution_id)),
+        format!("--allocation {}", r.allocation),
+        format!("--nullifier {}", hexq(&nullifier)),
+        format!("--claim-marker-seed {}", hexq(&marker_seed)),
+    ];
+    std::fs::write(out, lines.join("\n") + "\n")?;
+
+    println!("recipient        {index}");
+    println!("account leaf     {}", hex::encode(leaf));
+    println!("nullifier        {}", hex::encode(nullifier));
+    println!("marker seed      {}   (the claim marker PDA seed)", hex::encode(marker_seed));
+    println!("allocation       {}", r.allocation);
+    println!("witness          {} u32 words", words.len());
+    println!("wrote            {out}");
+    Ok(())
+}
+
+fn main() -> Result<()> {
+    let cli = Cli::parse();
+    match cli.cmd {
+        Cmd::DemoDistribution { count, id, base, step, out } => {
+            demo_distribution(count, hex32(&id)?, base, step, &out)
+        }
+        Cmd::ClaimArgs { dir, index, out } => claim_args(&dir, index, &out),
+    }
+}
