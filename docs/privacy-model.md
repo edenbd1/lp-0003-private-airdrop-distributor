@@ -50,6 +50,27 @@ distribution cannot be presented for another, and because claiming requires the
 marker to be uninitialised, a recipient can be counted at most once per
 distribution.
 
+## The encrypted bundle: how a recipient learns their row
+
+The distributor does not need a private channel to each recipient. It publishes
+one `bundle.json`: every recipient's claim data (allocation, salt, leaf index,
+Merkle path) sealed to a key derived from that recipient's secret, in shuffled
+order. Because each row is authenticated-encrypted to an X25519 key derived from
+the recipient's `nsk` through a domain separator (distinct from the nullifier and
+account key), the bundle can be posted in the open:
+
+- An observer sees only ciphertext and ephemeral public keys, learning neither
+  who is eligible nor any allocation, and cannot tell which row belongs to whom.
+- A recipient needs only the bundle and their own `nsk`. They trial-open each row
+  and keep the one whose authentication tag verifies.
+- Before spending a proof, the recipient checks the decrypted row reconstructs a
+  leaf that anchors to the committed root, so a malicious distributor cannot make
+  them prove a leaf that is not in the set.
+
+This is delivery, not trust: the on-chain guarantee still comes from Merkle
+membership against the committed root. The encryption only means the eligibility
+data can be published without a side channel. See `crates/airdrop-crypto`.
+
 ## Boundaries
 
 These are stated plainly in [`limitations.md`](limitations.md). In short: the
