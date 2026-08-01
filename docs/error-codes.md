@@ -1,0 +1,44 @@
+# Error codes
+
+Deterministic, documented codes for every invalid-claim scenario, as required by
+the LP-0003 reliability criterion. These are the codes the **deployed** claim
+verifier returns, so they are what an integrator sees from the chain.
+
+## Deployed claim verifier (`4xxx`)
+
+Defined in
+`crates/claim-verifier-spel/methods/guest/src/bin/claim_verifier.rs`.
+
+| Code | Constant | When it fires | What the claimant should do |
+|---:|---|---|---|
+| `4001` | `E_BAD_WITNESS` | `witness_words` did not decode as `ClaimWitness` | Wire-format drift; regenerate the claim arguments with the current CLI. |
+| `4002` | `E_NULLIFIER_MISMATCH` | The pinned `nullifier` is not the one the supplied witness yields | An attempt to prove one entry while occupying another's marker. Reject. |
+| `4003` | `E_ROOT_NOT_ANCHORED` | No distribution is committed for this `(distribution_id, root)`: the distribution PDA is uninitialised | The root was not committed by a distributor, or the claimant invented it. Reject. |
+| `4004` | `E_MARKER_SEED_MISMATCH` | `claim_marker_seed` is not `compute_claim_marker(distribution_id, nullifier)` | A forged marker seed, i.e. landing the claim at an address that misrepresents what was claimed. Reject. |
+| `4006` | `E_ALLOCATION_MISMATCH` | The claimed `allocation` is not the one sealed in the witness | An attempt to claim more than was granted. Reject. |
+
+`4005` and `4007` are reserved. Numbering is stable; new codes are appended.
+
+A program error surfaces from the sequencer as a failed transaction rather than a
+decodable numeric field, so the code is a diagnostic for whoever built the call.
+What an integrator branches on is the claim marker PDA: present and owned by the
+verifier means the claim passed at exactly the distribution and nullifier folded
+into its address.
+
+## Circuit-level errors (`airdrop_core::ClaimError`)
+
+The guest escalates each of these to a panic, so no proof exists for a claim that
+fails them. Defined in `crates/airdrop-core/src/lib.rs`.
+
+| Variant | When it fires |
+|---|---|
+| `NotEligible` | The recipient's leaf does not fold to the claimed root. |
+| `AllocationMismatch` | The statement allocation disagrees with the witness. |
+| `NullifierMismatch` | The statement nullifier is not the one the witness yields. |
+
+## What is never in an error
+
+No error message contains a field of `ClaimWitness`: not `nsk`, not `salt`, not
+the `merkle_path`, not the `leaf_index`. Diagnostics name the public statement
+field that disagrees or the code above, never a private input. Those fields never
+leave the prover process.
