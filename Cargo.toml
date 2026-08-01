@@ -2,6 +2,7 @@
 resolver = "2"
 members = [
     "crates/airdrop-core",
+    "crates/airdrop-crypto",
     "crates/airdrop-cli",
     "crates/claim-verifier-tests",
 ]
