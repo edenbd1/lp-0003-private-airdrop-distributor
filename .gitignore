@@ -4,3 +4,5 @@
 # and the root workspace lock committed for a deployable project.
 .work
 app/build
+/.demo/
+/app/darwin-arm64/
