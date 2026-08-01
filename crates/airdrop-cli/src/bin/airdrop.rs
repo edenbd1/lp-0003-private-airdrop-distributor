@@ -220,6 +220,7 @@ fn claim_from_bundle(dir: &str, nsk_hex: &str, out: &str) -> Result<()> {
 
     let nullifier = compute_claim_nullifier(&distribution_id, &nsk);
     let marker_seed = compute_claim_marker(&distribution_id, &nullifier);
+    let destination = derive_account_id(&derive_npk(&nsk), identifier);
     let witness = ClaimWitness {
         nsk,
         identifier,
@@ -227,12 +228,14 @@ fn claim_from_bundle(dir: &str, nsk_hex: &str, out: &str) -> Result<()> {
         salt: payload.salt,
         merkle_path: payload.merkle_path,
         leaf_index: payload.leaf_index,
+        destination,
     };
     let statement = ClaimStatement {
         distribution_root,
         distribution_id,
         allocation: payload.allocation,
         nullifier,
+        destination,
     };
     // Verify the decrypted row reconstructs a leaf that anchors to the committed
     // root before spending a proof: a malicious distributor cannot make us prove
@@ -257,6 +260,7 @@ fn claim_from_bundle(dir: &str, nsk_hex: &str, out: &str) -> Result<()> {
         format!("--allocation {}", payload.allocation),
         format!("--nullifier {}", hexq(&nullifier)),
         format!("--claim-marker-seed {}", hexq(&marker_seed)),
+        format!("--destination {}", hexq(&destination)),
     ];
     std::fs::write(out, lines.join("\n") + "\n")?;
     println!("opened your row from the bundle");
@@ -286,6 +290,9 @@ fn claim_args(dir: &str, index: usize, out: &str) -> Result<()> {
 
     let nullifier = compute_claim_nullifier(&distribution_id, &nsk);
     let marker_seed = compute_claim_marker(&distribution_id, &nullifier);
+    // Default destination: the recipient's own account. Bound into the proof, so
+    // the submission cannot redirect the allocation elsewhere.
+    let destination = derive_account_id(&derive_npk(&nsk), r.identifier);
 
     let witness = ClaimWitness {
         nsk,
@@ -294,12 +301,14 @@ fn claim_args(dir: &str, index: usize, out: &str) -> Result<()> {
         salt,
         merkle_path,
         leaf_index: r.leaf_index,
+        destination,
     };
     let statement = ClaimStatement {
         distribution_root,
         distribution_id,
         allocation: r.allocation,
         nullifier,
+        destination,
     };
 
     // Sanity: prove locally that the witness satisfies the statement before
@@ -325,6 +334,7 @@ fn claim_args(dir: &str, index: usize, out: &str) -> Result<()> {
         format!("--allocation {}", r.allocation),
         format!("--nullifier {}", hexq(&nullifier)),
         format!("--claim-marker-seed {}", hexq(&marker_seed)),
+        format!("--destination {}", hexq(&destination)),
     ];
     std::fs::write(out, lines.join("\n") + "\n")?;
 

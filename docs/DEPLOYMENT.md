@@ -20,8 +20,8 @@ transactions, which is what `scripts/verify-onchain-claim.sh` step 1 checks.
 
 | Program | ImageID | Deploy tx |
 |---|---|---|
-| Claim program (LEZ-native, `claim_lez.bin`) | `744041c6…6e576c62` | `94215cf71cabc3d8144ed2a138e957b18224e46b13eac04bab2c87398de81225` |
-| Claim verifier (SPEL, `claim_verifier.bin`) | `66ea2b79…e1dba7db` | `ffd449d8d4ff95e46e27b0f38a8a468c3179bd6ede57ce1cf41258504870e430` |
+| Claim program (LEZ-native, `claim_lez.bin`) | `1f6a0ec0…eb249508` | `5a200887d9b1a27a206cbf09aac419da122aeb921df56ecfc6e7676210c5dcc9` |
+| Claim verifier (SPEL, `claim_verifier.bin`) | `a7b7cf26…6fe7b77d` | `9e0a1929ad5c115e6a131a5d113a2db9ff158e5d5920c4ed6729e82a52d5580b` |
 
 ## Distributions and claims
 
@@ -36,21 +36,22 @@ only its eligibility root, in a PDA whose address is `[distribution_id, root]`.
 A claim is a **privacy-preserving** transaction: its instruction data is not
 published, and its only public trace is the claim marker PDA, owned by the
 verifier, seeded by the distribution and the recipient's nullifier. A verified
-example claim:
+example claim against the deployed verifier, with the destination bound into the
+proof:
 
 ```
-claim tx (privacy):  a5e27bcc1d524316e54cd7b535246918b5ceb171abbc26cb51ecc9b82bf02d46
-distribution:        a1…0001, recipient 5
-nullifier:           a2380fe7a1f17a6433bdd8a2dd417ce8408ad56e9ae64f6c57d89ac910a37731
-claim marker PDA:    FsKFPQqg1qveHAuTmWMs2KfBw79MqPk2F8zP5pEYzLEq  (owned by the verifier)
+distribution:        b1…0001, create_distribution 2fad9747f7f39d8935b8a760146abd851e3e3235856a924ef625138a64cc6309
+claim tx (privacy):  5cb5148572e92cced712a1e5af756b9f3e9b886e284c12f21324c6c8e5c0f9a0
+nullifier:           dac661f3cf147e7cc3e88bf340e183702542bdb9c1756bccf21b86cab66ee96d
+claim marker PDA:    8VCwNfgAUMQbEztyTJvQPB4gr8uqQPik2QX99yWBwvcS  (owned by the verifier)
 ```
 
 Verify it from public data over RPC:
 
 ```bash
-CLAIM_TX=a5e27bcc1d524316e54cd7b535246918b5ceb171abbc26cb51ecc9b82bf02d46 \
-NULLIFIER=a2380fe7a1f17a6433bdd8a2dd417ce8408ad56e9ae64f6c57d89ac910a37731 \
-DISTRIBUTION_ID=a100000000000000000000000000000000000000000000000000000000000001 \
+CLAIM_TX=5cb5148572e92cced712a1e5af756b9f3e9b886e284c12f21324c6c8e5c0f9a0 \
+NULLIFIER=dac661f3cf147e7cc3e88bf340e183702542bdb9c1756bccf21b86cab66ee96d \
+DISTRIBUTION_ID=b100000000000000000000000000000000000000000000000000000000000001 \
 ./scripts/verify-onchain-claim.sh
 ```
 

@@ -2,17 +2,17 @@
 
 Stated plainly, so a reviewer does not have to find them.
 
-## The claim marker records eligibility, token delivery is the integration layer
+## The claim marker records eligibility; the destination is bound in the proof
 
 A successful claim leaves a marker PDA, owned by the verifier, seeded by the
 distribution and the recipient's nullifier. That marker is proof-of-eligibility:
-it says "this recipient claimed this distribution, once." Actually crediting `N`
-tokens to a shielded destination is the integration's job, and the destination is
-not bound into the marker. An integration that transfers tokens on the strength
-of the marker should bind its own destination in the same transaction. Binding an
-unlinkable destination inside the circuit (so a relayer cannot redirect a claim
-it observes) is the natural next hardening and is deliberately out of scope for
-this version.
+it says "this recipient claimed this distribution, once." The claim also carries a
+`destination`, and it is bound into the proof: the chained claim program requires
+`witness.destination == statement.destination`, so whoever holds only the proven
+claim cannot redirect the allocation without re-proving, which needs the secret.
+Actually moving `N` tokens to that destination is the integration's job; what the
+primitive guarantees is that the destination a claim commits to cannot be changed
+by the submission.
 
 ## Unlinkability is against passive observers, not voluntary disclosure
 

@@ -51,13 +51,13 @@ const E_MARKER_SEED_MISMATCH: u32 = 4004;
 const E_ALLOCATION_MISMATCH: u32 = 4006;
 
 /// ProgramId of the LEZ-native claim program (`claim_lez.bin`,
-/// ImageID `744041c61599641425604174220fcc1a299fae185e5113d931ae26a56e576c62`).
+/// ImageID `1f6a0ec0036ec2c0c23dcc8380aeb9be26128608db3bb6f5b10d3f30eb249508`).
 /// The deployment is content-addressed, so this pins exactly the audited binary.
 ///
 /// Verify with:
 ///   spel program-id artifacts/programs/claim_lez.bin
 pub const CLAIM_LEZ_PROGRAM_ID: nssa_core::program::ProgramId = [
-    3326165108, 342137109, 1950441509, 449580834, 414097193, 3641921886, 2770775601, 1651267438,
+    3222170143, 3233967619, 2211200450, 3199839872, 143004198, 4122360795, 809438641, 143992043,
 ];
 
 #[lez_program]
@@ -106,6 +106,8 @@ mod claim_verifier {
     /// - `distribution_root`, `distribution_id`, `allocation`, `nullifier`: the
     ///   public statement the proof establishes.
     /// - `claim_marker_seed`: the marker PDA seed, re-derived here.
+    /// - `destination`: where the allocation is destined. The chained proof binds
+    ///   it to the witness, so the submission cannot redirect it.
     #[instruction]
     pub fn claim(
         #[account(init, pda = arg("claim_marker_seed"))]
@@ -120,6 +122,7 @@ mod claim_verifier {
         allocation: u128,
         nullifier: [u8; 32],
         claim_marker_seed: [u8; 32],
+        destination: [u8; 32],
     ) -> SpelResult {
         // 1. Decode the witness and rebuild the statement the proof establishes.
         let witness: airdrop_core::ClaimWitness = risc0_zkvm::serde::from_slice(&witness_words)
@@ -130,6 +133,10 @@ mod claim_verifier {
             distribution_id,
             allocation,
             nullifier,
+            // The claim's allocation is bound to this destination. The chained
+            // proof establishes that the witness commits the same destination,
+            // so the submission cannot redirect the allocation.
+            destination,
         };
 
         // 2. Re-derive the nullifier from the witness secret and the distribution,

@@ -42,6 +42,7 @@ enum VerifierInstruction {
         allocation: u128,
         nullifier: [u8; 32],
         claim_marker_seed: [u8; 32],
+        destination: [u8; 32],
     },
 }
 
@@ -123,6 +124,7 @@ impl Scenario {
                 salt,
                 merkle_path: paths[idx].1.clone(),
                 leaf_index: paths[idx].0,
+                destination: derive_account_id(&derive_npk(&nsk), 0),
             },
             distribution_root: root,
             distribution_id,
@@ -142,6 +144,7 @@ impl Scenario {
                     distribution_id: self.distribution_id,
                     allocation: self.allocation,
                     nullifier: self.nullifier,
+                    destination: self.witness.destination,
                 },
             })?,
             distribution_root: self.distribution_root,
@@ -149,6 +152,7 @@ impl Scenario {
             allocation: self.allocation,
             nullifier: self.nullifier,
             claim_marker_seed: self.marker_seed,
+            destination: self.witness.destination,
         };
 
         // Accounts in declaration order: claim_marker (init PDA), distribution
@@ -205,6 +209,7 @@ impl Scenario {
                     distribution_id: self.distribution_id,
                     allocation: self.allocation,
                     nullifier: self.nullifier,
+                    destination: self.witness.destination,
                 },
             })?,
             distribution_root: self.distribution_root,
@@ -212,6 +217,7 @@ impl Scenario {
             allocation: self.allocation,
             nullifier: self.nullifier,
             claim_marker_seed: self.marker_seed,
+            destination: self.witness.destination,
         };
         let pre_states = vec![
             AccountWithMetadata {
