@@ -52,6 +52,28 @@ commitment.
   derivations, shared by the guest and the verifier so there is one source of
   truth for what a claim proves.
 
+## Quickstart
+
+From a clean clone, with a Rust toolchain and `spel` on PATH:
+
+```
+./scripts/demo.sh
+```
+
+runs the whole thing with `RISC0_DEV_MODE=0` and no funded account: the
+adversarial suites (circuit, bundle, and the deployed binary through the
+sequencer's executor), a padded distribution, a recipient opening their row from
+only the bundle and their secret, the compute cost, and finally a live on-chain
+verification of a deployed claim.
+
+- **CLI.** The `airdrop` tool builds a distribution (`demo-distribution`, with
+  `--pad` to hide the recipient count) and claims from only the published bundle
+  and a recipient secret (`claim-from-bundle`).
+- **Basecamp app.** `app/lp-0003-airdrop.lgx` (see [`app/README.md`](app/README.md));
+  the GUI drives the same CLI, so it computes the same commitments as the chain.
+- **Full create-then-claim on testnet** (real proving, funded account needed):
+  `scripts/deploy-and-claim.sh`; see [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md).
+
 ## Verify it yourself
 
 Every claim's on-chain evidence is checkable from public data, reading the chain

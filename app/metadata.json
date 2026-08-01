@@ -1,13 +1,11 @@
 {
   "name": "lp_0003_airdrop",
   "version": "0.1.0",
-  "description": "Private allowlist / airdrop claim — prove eligibility and claim an allocation from inside Basecamp, without revealing which address you hold",
+  "description": "Private allowlist / airdrop claim \u2014 prove eligibility and claim an allocation from inside Basecamp, without revealing which address you hold",
   "author": "edenbd1",
   "type": "ui",
   "main": "lp_0003_airdrop",
-  "dependencies": [
-    "logos-delivery-module"
-  ],
+  "dependencies": [],
   "category": "privacy",
   "build": {
     "type": "cmake",
