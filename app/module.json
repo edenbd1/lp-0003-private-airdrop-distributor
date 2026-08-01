@@ -1,0 +1,24 @@
+{
+  "name": "lp_0003_airdrop",
+  "version": "0.1.0",
+  "description": "Private allowlist / airdrop claim — prove eligibility and claim an allocation from inside Basecamp, without revealing which address you hold",
+  "author": "edenbd1",
+  "type": "ui",
+  "main": "lp_0003_airdrop",
+  "dependencies": [
+    "logos-delivery-module"
+  ],
+  "category": "privacy",
+  "build": {
+    "type": "cmake",
+    "files": [
+      "src/plugin.cpp",
+      "src/plugin.h",
+      "src/claim_bridge.cpp",
+      "src/claim_bridge.h",
+      "qml/Main.qml",
+      "qml/qmldir",
+      "src/metadata.json"
+    ]
+  }
+}
