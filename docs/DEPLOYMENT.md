@@ -102,9 +102,11 @@ cargo run -p airdrop-cli --bin airdrop -- demo-distribution \
 ./scripts/deploy-and-claim.sh   # see the script header for env vars
 ```
 
-> The wallet may print `Transaction NOT confirmed` for a privacy-preserving
-> claim whose proving outruns its polling window; the transaction lands anyway.
-> Check with `getTransaction`, not the CLI verdict.
+> A privacy-preserving claim is not shown by the block explorer (it publishes no
+> instruction data), so its explorer page reads "not found" even though
+> `getTransaction` returns it over RPC. Verify claims over RPC, for example with
+> `scripts/verify-onchain-claim.sh`. Reported upstream at
+> `logos-blockchain/lez-explorer-ui#15`.
 
 ## Signer
 

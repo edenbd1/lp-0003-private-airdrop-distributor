@@ -68,6 +68,7 @@ a Logos indexer limitation, not a dead transaction. It is also intrinsic to what
 the claim proves: the privacy path is the only one that verifies a proof on
 chain, and it is the one the explorer does not index. Verification therefore
 reads the chain over RPC, which is what `scripts/verify-onchain-claim.sh` does.
+This is reported upstream at `logos-blockchain/lez-explorer-ui#15`.
 
 ## Proving cost
 
