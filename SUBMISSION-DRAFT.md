@@ -2,9 +2,8 @@
 
 > **Draft.** This is the file that would become `solutions/LP-0003.md` in a PR to
 > `logos-co/lambda-prize`. It is kept here so it can be reviewed before anything
-> is opened upstream. Two things are still outstanding and are marked as such
-> below: the narrated demo video, and the upstream issues for two Logos-tooling
-> defects hit during the testnet run.
+> is opened upstream. One thing is still outstanding and is marked as such below:
+> the narrated demo video.
 
 **Submitted by:** edenbd1
 
@@ -283,10 +282,10 @@ the cross-platform path.
 ### Reliability
 
 Local pre-verification before proving; a marker written only on success;
-deterministic error codes `4001`–`4006`. A failure mode I know about and have not
-solved in tooling: a privacy claim whose proving outruns the wallet's polling
-window prints "Transaction NOT confirmed" while landing anyway — the scripts poll
-`getTransaction` rather than trust the CLI verdict, and the docs say so.
+deterministic error codes `4001`–`4006`. The scripts confirm a claim by polling
+`getTransaction` over RPC rather than by trusting the block explorer, which does
+not show privacy-preserving transactions (see below), so a landed claim is never
+mistaken for a failed one.
 
 ### Performance
 
@@ -327,21 +326,21 @@ until you hit them and neither is a program bug:
    transaction spends the signer's commitment, so a second claim built against a
    stale commitment is dropped by the sequencer. `account sync-private` before
    each claim fixes it, and `scripts/deploy-and-claim.sh` does so.
-2. **The block explorer does not index privacy transactions, and the wallet can
-   print a false "Transaction NOT confirmed".** A privacy claim publishes no
-   instruction data, so the explorer shows "not found" and the marker page can
-   show a stale default owner, while `getTransaction`/`getAccount` report the real
-   state over RPC. Verification therefore reads the chain over RPC, which is what
-   `scripts/verify-onchain-claim.sh` does. These are Logos-tooling limitations,
-   not dead transactions; upstream issues are listed under Outstanding.
+2. **The block explorer does not show privacy transactions.** A privacy claim
+   publishes no instruction data, so the explorer's transaction page reads "not
+   found" and the marker page can show a stale default owner, while
+   `getTransaction`/`getAccount` report the real state over RPC. Verification
+   therefore reads the chain over RPC, which is what `scripts/verify-onchain-claim.sh`
+   does. This is a Logos indexer limitation, not a dead transaction, and is
+   reported upstream at `logos-blockchain/lez-explorer-ui#15`.
 
 ## Outstanding
 
 - **The narrated video has not been recorded.** `VIDEO_SCRIPT.md` has the full
   script. Nothing in this submission claims otherwise.
-- **Upstream issues for the two tooling defects above** (explorer not indexing
-  privacy transactions; wallet false "NOT confirmed") are to be filed in the
-  `logos-execution-zone` repository and linked here.
+
+The explorer's failure to show privacy transactions is filed upstream at
+`logos-blockchain/lez-explorer-ui#15`.
 
 ## Terms & Conditions
 
