@@ -36,6 +36,7 @@ VERIFIER_BIN=artifacts/programs/claim_verifier.bin
 # Filled in by scripts/deploy-and-claim.sh after a live claim. Override via env.
 CLAIM_TX="${CLAIM_TX:-}"
 NULLIFIER="${NULLIFIER:-}"
+DISTRIBUTION_ID="${DISTRIBUTION_ID:-}"
 
 FAILED=0
 ok()  { printf '  \033[32mOK\033[0m   %s\n' "$1"; }
@@ -116,9 +117,13 @@ print(found)" "$TX_B64")
 fi
 echo
 
-echo "[4/5] derive the claim marker PDA from the ImageID and the nullifier"
+echo "[4/5] derive the claim marker PDA from the ImageID and the enforced claim"
 VID=$(image_id "$VERIFIER_BIN")
 [ -n "$VID" ] || VID=66ea2b79a32dd7b658eaa3c983b3ef1ef6fd130ca4f6da42b1c638ace1dba7db
+# The marker seed commits to the distribution and the nullifier:
+#   seed   = SHA256(CLAIM_MARKER_PREFIX || distribution_id || nullifier)
+#   marker = PDA(verifier, seed)
+# so the marker's address records which distribution this claim spent.
 MARKER=$(python3 -c "
 import hashlib,sys
 A=b'123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz'
@@ -126,12 +131,17 @@ def b58(b):
     n=int.from_bytes(b,'big'); o=b''
     while n: n,r=divmod(n,58); o=A[r:r+1]+o
     return '1'*(len(b)-len(b.lstrip(b'\0')))+o.decode()
-image, nullifier = sys.argv[1], sys.argv[2]
+image, did, nullifier = sys.argv[1], sys.argv[2], sys.argv[3]
+g=hashlib.sha256()
+g.update(b'/lp-0003/v0.1/ClaimMark/'+b'\0'*8)
+g.update(bytes.fromhex(did)); g.update(bytes.fromhex(nullifier))
+seed=g.digest()
 h=hashlib.sha256()
 h.update(b'/LEE/v0.2/AccountId/PDA/'+b'\0'*8)
-h.update(bytes.fromhex(image)); h.update(bytes.fromhex(nullifier))
-print(b58(h.digest()))" "$VID" "$NULLIFIER")
+h.update(bytes.fromhex(image)); h.update(seed)
+print(b58(h.digest()))" "$VID" "$DISTRIBUTION_ID" "$NULLIFIER")
 ok "verifier ImageID $VID"
+ok "distribution     ${DISTRIBUTION_ID:0:16}…"
 ok "derived marker   $MARKER"
 echo
 
