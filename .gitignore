@@ -6,3 +6,4 @@
 app/build
 /.demo/
 /app/darwin-arm64/
+/.demo-prove/
