@@ -18,6 +18,15 @@ jobs:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
 
+      # claim-verifier-tests runs the committed ELF through risc0's executor,
+      # which shells out to r0vm. Install it (no docker guest toolchain needed,
+      # only the emulator).
+      - name: Install r0vm
+        run: |
+          curl -L https://risczero.com/install | bash
+          echo "$HOME/.risc0/bin" >> "$GITHUB_PATH"
+          "$HOME/.risc0/bin/rzup" install r0vm 3.0.5
+
       - uses: actions/cache@v4
         with:
           path: |
