@@ -67,12 +67,14 @@ fn a_recipient_claims_from_only_the_bundle_and_their_secret() {
         salt: recovered.salt,
         merkle_path: recovered.merkle_path,
         leaf_index: recovered.leaf_index,
+        destination: [0xDE; 32],
     };
     let statement = ClaimStatement {
         distribution_root: root,
         distribution_id: DIST_ID,
         allocation: recovered.allocation,
         nullifier,
+        destination: [0xDE; 32],
     };
 
     // The recovered row builds a claim the program accepts against the committed
