@@ -72,8 +72,9 @@ reads the chain over RPC, which is what `scripts/verify-onchain-claim.sh` does.
 ## Proving cost
 
 A privacy-preserving claim proves locally before submission; on Apple Silicon CPU
-this is on the order of seconds for the guest plus the privacy circuit's
-composition. Deployments sensitive to first-claim latency should prove in the
+this is about 2.5 minutes end to end (measured 153 s with `RISC0_DEV_MODE=0`,
+proving the chained guest plus the privacy circuit's composition being nearly all
+of it). Deployments sensitive to first-claim latency should prove in the
 background and submit when ready.
 
 ## Set size and tree depth

@@ -20,6 +20,16 @@ Measured against the deployed `claim_verifier.bin`
 
 `create_distribution` is lighter still: it initialises one PDA and writes no data.
 
+## Proof-generation wall-clock
+
+The cycle count above is the on-chain compute cost. The separate client-side cost
+is the time to *generate* the proof, which the criterion also asks for. Measured
+end to end on Apple-Silicon CPU with `RISC0_DEV_MODE=0` (real STARKs, no mock
+receipts), one claim proves and submits in **~153 seconds** — proving the chained
+`claim_lez` guest and the privacy circuit's composition being nearly all of it,
+the submission itself a few seconds. This is the real first-claim latency; a
+deployment sensitive to it should prove in the background and submit when ready.
+
 The claim verifier is cheap because it does no heavy in-guest cryptography
 itself: it re-derives the nullifier and marker seed (a few SHA-256 hashes),
 reads the anchored distribution's owner, and declares the chained call. Merkle
