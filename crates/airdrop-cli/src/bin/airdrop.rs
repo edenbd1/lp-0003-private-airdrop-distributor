@@ -219,13 +219,6 @@ fn claim_from_bundle(dir: &str, nsk_hex: &str, out: &str) -> Result<()> {
     let nsk = hex32(nsk_hex)?;
     let keys = airdrop_crypto::derive_enc_keypair(&nsk);
 
-    // Trial-open each row; the one that verifies is ours.
-    let payload: airdrop_crypto::RowPayload = bundle
-        .iter()
-        .find_map(|row| airdrop_crypto::decrypt_row(&keys, row))
-        .and_then(|pt| serde_json::from_slice(&pt).ok())
-        .context("no row in the bundle opens for this secret")?;
-
     let distribution_id = hex32(&dist.id_hex)?;
     let distribution_root = hex32(&dist.root_hex)?;
     let identifier = 0u128;
@@ -233,28 +226,41 @@ fn claim_from_bundle(dir: &str, nsk_hex: &str, out: &str) -> Result<()> {
     let nullifier = compute_claim_nullifier(&distribution_id, &nsk);
     let marker_seed = compute_claim_marker(&distribution_id, &nullifier);
     let destination = derive_account_id(&derive_npk(&nsk), identifier);
-    let witness = ClaimWitness {
-        nsk,
-        identifier,
-        allocation: payload.allocation,
-        salt: payload.salt,
-        merkle_path: payload.merkle_path,
-        leaf_index: payload.leaf_index,
-        destination,
-    };
-    let statement = ClaimStatement {
-        distribution_root,
-        distribution_id,
-        allocation: payload.allocation,
-        nullifier,
-        destination,
-    };
-    // Verify the decrypted row reconstructs a leaf that anchors to the committed
-    // root before spending a proof: a malicious distributor cannot make us prove
-    // a leaf that is not in the set.
-    airdrop_core::claim(&witness, &statement).map_err(|e| {
-        anyhow::anyhow!("the decrypted row does not anchor to the committed root: {e:?}")
-    })?;
+
+    // Trial-open each row and keep the one whose payload actually reconstructs a
+    // leaf that anchors to the committed root. Scanning for a *valid* row, not
+    // merely the first that decrypts, makes the recipient robust to junk or
+    // maliciously crafted rows placed in the open bundle: a row that opens but
+    // does not anchor (or a low-order header meant to open for everyone) is
+    // skipped rather than aborting the claim. It also enforces the trust
+    // boundary, since a malicious distributor cannot make us prove a leaf that is
+    // not in the set: such a row fails `claim` and is discarded here.
+    let (payload, witness, statement) = bundle
+        .iter()
+        .filter_map(|row| {
+            let pt = airdrop_crypto::decrypt_row(&keys, row)?;
+            let payload: airdrop_crypto::RowPayload = serde_json::from_slice(&pt).ok()?;
+            let witness = ClaimWitness {
+                nsk,
+                identifier,
+                allocation: payload.allocation,
+                salt: payload.salt,
+                merkle_path: payload.merkle_path.clone(),
+                leaf_index: payload.leaf_index,
+                destination,
+            };
+            let statement = ClaimStatement {
+                distribution_root,
+                distribution_id,
+                allocation: payload.allocation,
+                nullifier,
+                destination,
+            };
+            airdrop_core::claim(&witness, &statement).ok()?;
+            Some((payload, witness, statement))
+        })
+        .next()
+        .context("no row in the bundle opens for this secret and anchors to the committed root")?;
 
     let instruction = airdrop_core::ClaimInstruction {
         witness,
