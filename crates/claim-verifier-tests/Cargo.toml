@@ -1,0 +1,23 @@
+[package]
+name = "claim-verifier-tests"
+description = "Runs the deployed LP-0003 claim verifier through the sequencer's own executor and requires each forgery to be rejected."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish = false
+
+[dependencies]
+# The exact LEZ types the sequencer feeds a program guest, pinned to the tag the
+# public testnet runs.
+lee_core = { git = "https://github.com/logos-blockchain/logos-execution-zone.git", tag = "v0.2.0", features = ["host"] }
+risc0-zkvm = { version = "3.0.5", features = ["client"] }
+risc0-binfmt = "3.0"
+airdrop-core = { path = "../airdrop-core" }
+serde = { version = "1", features = ["derive"] }
+sha2 = "0.10"
+bytemuck = "1"
+anyhow = "1"
+
+[[bin]]
+name = "noop"
+path = "src/noop.rs"
