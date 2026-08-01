@@ -25,7 +25,7 @@ transactions, which is what `scripts/verify-onchain-claim.sh` step 1 checks.
 
 ## Distributions and claims
 
-Two distributions are committed on chain under the **current** verifier
+Three distributions are committed on chain under the **current** verifier
 (ImageID `a7b7cf26…`) with `create_distribution`; each commits only its
 eligibility root, in a PDA whose address is `[distribution_id, root]` derived
 from the verifier's own program id.
@@ -34,6 +34,7 @@ from the verifier's own program id.
 |---|---|---|---|
 | 1 | `b1…0001` | 12 | `2fad9747f7f39d8935b8a760146abd851e3e3235856a924ef625138a64cc6309` |
 | 2 | `b2…0002` | 10 | `72a32e082ae387428226853be81d6aa1f56796da96eb1c2a50e30a743ca27e78` |
+| 3 | `d4…0004` | 6 | `ecf619d7c0e8aebd74e6f8318a9badb1dfe6b18a7e48dfd6390e4c4b8a2ad511` |
 
 > An earlier pair of distributions (`a1…`, `a2…`) was committed under a previous
 > verifier ImageID (`66ea2b79…`), before the destination binding was added and
@@ -42,10 +43,10 @@ from the verifier's own program id.
 > are not used here. The distributions above are the ones under the deployed
 > verifier.
 
-The full list of live claims across these two distributions, each verifiable with
-`verify-onchain-claim.sh`, is committed at
+The full list of live claims across these three distributions is committed at
 [`artifacts/e2e/claims.tsv`](../artifacts/e2e/claims.tsv) as
-`distribution_id, claim_tx, nullifier`.
+`distribution_id, claim_tx, nullifier`: 23 privacy-preserving claims (10 + 7 + 6),
+each independently verifiable with `verify-onchain-claim.sh`.
 
 A claim is a **privacy-preserving** transaction: its instruction data is not
 published, and its only public trace is the claim marker PDA, owned by the
