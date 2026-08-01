@@ -20,6 +20,10 @@ transaction path, and a double-claim is prevented by a secret-bound nullifier.
   still cannot compute it.
 - **A recipient cannot claim more than they were granted.** The allocation is
   sealed into the committed leaf.
+- **The eligibility set can be published, encrypted.** The distributor posts one
+  bundle of rows, each sealed to a key derived from the recipient's secret, so no
+  side channel is needed and an observer learns neither who is eligible nor any
+  allocation.
 
 ## Why the root is anchored, and why that matters
 
@@ -86,6 +90,7 @@ secret are each constructed and required to fail.
 | Component | Path | Role |
 |---|---|---|
 | Shared primitive | `crates/airdrop-core` | Eligibility leaf, claim statement, nullifier, marker seed, tree builder |
+| Encrypted bundle | `crates/airdrop-crypto` | Publishable per-recipient encrypted eligibility rows (X25519 + ChaCha20-Poly1305) |
 | Claim circuit | `crates/claim-circuit` | LEZ-native guest emitting a `ProgramOutput`, composed by `env::verify` |
 | Claim verifier | `crates/claim-verifier-spel` | SPEL program: anchors the root, verifies the proof on chain, claims the marker |
 | Verifier audit | `crates/claim-verifier-tests` | Runs the deployed binary through the sequencer's executor |

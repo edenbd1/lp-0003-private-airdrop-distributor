@@ -7,7 +7,7 @@ satisfies it. Codes: ✅ done, 🔧 scripted and reproducible, pending a live ru
 
 | Criterion | Evidence |
 |---|---|
-| Distributor commits an eligibility set on chain without revealing addresses | ✅ `create_distribution` commits only the Merkle root, in a PDA seeded by `[distribution_id, root]` (`claim_verifier.rs`). |
+| Distributor commits an eligibility set on chain without revealing addresses | ✅ `create_distribution` commits only the Merkle root, in a PDA seeded by `[distribution_id, root]` (`claim_verifier.rs`). The set can also be **published encrypted**: `crates/airdrop-crypto` seals each recipient's row to a key derived from their secret, so no side channel is needed and an observer learns neither eligibility nor allocations. |
 | Eligible recipient claims without revealing which address | ✅ `claim` is a membership proof; the witness (nsk, path) never reaches the journal, and a privacy tx publishes no instruction data. |
 | No double-claim (nullifiers or equivalent) | ✅ marker PDA seeded by `compute_claim_marker(distribution_id, nullifier)`; `init` fails on the second claim. Tested: `airdrop-core` and `claim-verifier-tests`. |
 | On-chain observer cannot link a claim to an address | ✅ nullifier is secret-bound (`compute_claim_nullifier(distribution_id, nsk)`); see `docs/privacy-model.md`. Tested: `the_nullifier_is_not_computable_from_public_data`. |
