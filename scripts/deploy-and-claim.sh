@@ -78,6 +78,10 @@ run_distribution() { # id count dir base step
     local args="$dir/claim_$i.args"
     "$CLI" claim-args --dir "$dir" --index "$i" --out "$args" >/dev/null
     local flat; flat=$(tr '\n' ' ' < "$args")
+    # A privacy transaction spends the signer's commitment, so the claimant's
+    # private account must be re-synced before each claim or its membership proof
+    # is stale and the sequencer drops the transaction.
+    "$WALLET_BIN" account sync-private >/dev/null 2>&1 || true
     echo "  claim $i of dist ${id:0:8} ..."
     local out; out=$(eval "$SPEL_BIN" --idl "$IDL" --program "$VERIFIER" \
       --bin-claimlez "$CLAIM_LEZ" \
