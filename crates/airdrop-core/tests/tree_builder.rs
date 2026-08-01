@@ -25,10 +25,12 @@ fn roundtrip_for_size(n: usize) {
         let w = ClaimWitness {
             nsk: nsks[i], identifier: 0, allocation: allocs[i], salt: salts[i],
             merkle_path: paths[i].1.clone(), leaf_index: paths[i].0,
+            destination: [0xDE; 32],
         };
         let st = ClaimStatement {
             distribution_root: root, distribution_id: DIST_ID,
             allocation: allocs[i], nullifier: compute_claim_nullifier(&DIST_ID, &nsks[i]),
+            destination: [0xDE; 32],
         };
         claim(&w, &st).unwrap_or_else(|e| panic!("size {n}, leaf {i}: {e:?}"));
     }

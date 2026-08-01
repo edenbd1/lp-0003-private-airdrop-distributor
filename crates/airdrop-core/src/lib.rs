@@ -207,6 +207,10 @@ pub struct ClaimWitness {
     pub merkle_path: Vec<[u8; 32]>,
     /// 0-indexed leaf position in the eligibility tree.
     pub leaf_index: u64,
+    /// Where this claim's allocation is destined. Committed into the proof so
+    /// the submission cannot redirect it: whoever holds only the proven claim
+    /// cannot change the destination without re-proving, which needs the secret.
+    pub destination: [u8; 32],
 }
 
 /// The public statement a claim proof establishes.
@@ -221,6 +225,9 @@ pub struct ClaimStatement {
     pub allocation: u128,
     /// The nullifier that prevents a second claim.
     pub nullifier: [u8; 32],
+    /// The committed destination for this claim's allocation. Bound into the
+    /// proof so it cannot be redirected after proving.
+    pub destination: [u8; 32],
 }
 
 /// The instruction a claim proof runs over: the private witness plus the public
@@ -241,6 +248,8 @@ pub enum ClaimError {
     AllocationMismatch,
     /// The supplied nullifier is not the one this witness yields.
     NullifierMismatch,
+    /// The public destination does not equal the one the witness commits.
+    DestinationMismatch,
 }
 
 /// The in-circuit claim logic. Returns the eligibility leaf on success, or a
@@ -274,6 +283,12 @@ pub fn claim(witness: &ClaimWitness, statement: &ClaimStatement) -> Result<[u8; 
     let nullifier = compute_claim_nullifier(&statement.distribution_id, &witness.nsk);
     if nullifier != statement.nullifier {
         return Err(ClaimError::NullifierMismatch);
+    }
+
+    // The public destination must be the one the witness commits, so the proof
+    // binds where the allocation goes and the submission cannot redirect it.
+    if witness.destination != statement.destination {
+        return Err(ClaimError::DestinationMismatch);
     }
 
     Ok(leaf)

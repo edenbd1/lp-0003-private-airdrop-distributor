@@ -16,6 +16,7 @@ use airdrop_core::{
 };
 
 const DIST_ID: [u8; 32] = [0xD1; 32];
+const DEST: [u8; 32] = [0xDE; 32];
 
 /// Build a realistic eligibility set of `n` recipients and return the tree root,
 /// the per-recipient secrets/allocations/salts, and their membership paths.
@@ -54,6 +55,7 @@ fn witness_for(s: &Setup, i: usize) -> ClaimWitness {
         salt: s.salts[i],
         merkle_path: s.paths[i].1.clone(),
         leaf_index: s.paths[i].0,
+        destination: DEST,
     }
 }
 
@@ -64,6 +66,7 @@ fn statement_for(s: &Setup, i: usize) -> ClaimStatement {
         distribution_id: DIST_ID,
         allocation: s.allocations[i],
         nullifier,
+        destination: DEST,
     }
 }
 
@@ -96,12 +99,14 @@ fn a_non_member_is_rejected() {
         salt,
         merkle_path: s.paths[0].1.clone(),
         leaf_index: s.paths[0].0,
+        destination: DEST,
     };
     let st = ClaimStatement {
         distribution_root: s.root,
         distribution_id: DIST_ID,
         allocation: 100,
         nullifier: compute_claim_nullifier(&DIST_ID, &outsider_nsk),
+        destination: DEST,
     };
     let _ = leaf;
     assert_eq!(claim(&w, &st), Err(ClaimError::NotEligible));
@@ -198,12 +203,14 @@ fn a_stolen_leaf_with_a_foreign_secret_is_rejected() {
         salt: s.salts[4],
         merkle_path: s.paths[4].1.clone(),
         leaf_index: s.paths[4].0,
+        destination: DEST,
     };
     let st = ClaimStatement {
         distribution_root: s.root,
         distribution_id: DIST_ID,
         allocation: s.allocations[4],
         nullifier: compute_claim_nullifier(&DIST_ID, &attacker_nsk),
+        destination: DEST,
     };
     assert_eq!(claim(&w, &st), Err(ClaimError::NotEligible));
 }
@@ -217,4 +224,16 @@ fn a_forged_nullifier_is_rejected() {
     let mut st = statement_for(&s, 6);
     st.nullifier = [0x00; 32];
     assert_eq!(claim(&w, &st), Err(ClaimError::NullifierMismatch));
+}
+
+/// The destination is bound: a public destination that disagrees with the one
+/// the witness commits is rejected, so a claim cannot be redirected after it is
+/// built.
+#[test]
+fn a_redirected_destination_is_rejected() {
+    let s = setup(8);
+    let w = witness_for(&s, 1);
+    let mut st = statement_for(&s, 1);
+    st.destination = [0xBA; 32]; // a relayer trying to redirect the allocation
+    assert_eq!(claim(&w, &st), Err(ClaimError::DestinationMismatch));
 }
