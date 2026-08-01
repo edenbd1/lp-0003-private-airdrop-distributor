@@ -50,3 +50,12 @@ cmake --build build
 Drop the built `lp_0003_airdrop.lgx` into Basecamp's user-plugins directory
 (`~/Library/Application Support/Logos/LogosBasecampDev/plugins/` on macOS);
 Basecamp's PluginLoader picks it up on next launch.
+
+
+## Packaged asset
+
+`app/lp-0003-airdrop.lgx` (843 KB, SHA-256 `d90db8c3a1d03315124b0c6c2cec7a4e3c15d18e620affc3e283b3cf9840aeae`) is the
+packaged module, built with the Logos module builder and the `lgx` tool
+(`logos-package`). It carries the `darwin-arm64` variant: the plugin dylib, the
+QML view, the module metadata, and the `airdrop` CLI the bridge drives. Drop it
+into Basecamp's user-plugins directory to load it.
