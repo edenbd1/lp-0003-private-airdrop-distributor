@@ -1,0 +1,67 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# Cancel superseded runs on the same ref to avoid an email flood.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Host tests and the deployed-binary adversarial audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: cargo-${{ runner.os }}-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: cargo-${{ runner.os }}-
+
+      # airdrop-core carries the circuit-level adversarial audit; airdrop-cli the
+      # distributor/claim tooling. claim-verifier-tests runs the committed
+      # claim_verifier.bin through the sequencer's own executor and requires each
+      # forgery to be rejected. All run on a stock runner: executing the ELF needs
+      # no docker guest toolchain, only the risc0 emulator.
+      - name: Build
+        run: cargo build --workspace --release
+
+      - name: Test
+        run: cargo test --workspace --release
+
+  # The guest and SPEL binaries are content-addressed and committed under
+  # artifacts/programs/. Rebuilding them needs the risc0 docker toolchain and is
+  # done locally; DEPLOYMENT.md records the reproduction. This job asserts the
+  # committed binaries match their recorded ImageIDs, so a tampered binary fails
+  # CI without a full guest rebuild.
+  binaries:
+    name: Committed binaries match their recorded ImageIDs
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install spel
+        run: |
+          cargo install --locked --git https://github.com/logos-co/spel --tag v0.6.0 spel \
+            || cargo install --git https://github.com/logos-co/spel --tag v0.6.0 spel
+          command -v spel >/dev/null || { echo "spel not on PATH"; exit 1; }
+      - name: Check ImageIDs
+        run: |
+          set -e
+          check() {
+            got=$(spel program-id "$1" | sed -n 's/.*ImageID (hex bytes):[[:space:]]*//p')
+            if [ "$got" != "$2" ]; then
+              echo "ImageID mismatch for $1: got $got expected $2"; exit 1
+            fi
+            echo "OK $1 $got"
+          }
+          check artifacts/programs/claim_lez.bin      744041c61599641425604174220fcc1a299fae185e5113d931ae26a56e576c62
+          check artifacts/programs/claim_verifier.bin 66ea2b79a32dd7b658eaa3c983b3ef1ef6fd130ca4f6da42b1c638ace1dba7db
