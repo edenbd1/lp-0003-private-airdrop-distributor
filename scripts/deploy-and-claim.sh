@@ -58,7 +58,11 @@ print(hashlib.sha256(struct.pack('<I',len(b))+b).hexdigest())" "$1"; }
 wait_tx "$(deploy_hash "$CLAIM_LEZ")" "claim program"
 wait_tx "$(deploy_hash "$VERIFIER")"  "claim verifier"
 
-MANIFEST="artifacts/e2e/claims.tsv"
+# A fresh run produces NEW privacy-claim transactions (each is signed with a
+# nonce, so the hashes differ from any prior run). It therefore writes to its own
+# output file and does NOT overwrite artifacts/e2e/claims.tsv, which is the
+# committed, historical list of the live claims cited in docs/DEPLOYMENT.md.
+MANIFEST="${MANIFEST:-artifacts/e2e/deploy-run.tsv}"
 mkdir -p artifacts/e2e
 : > "$MANIFEST"
 
@@ -99,9 +103,9 @@ run_distribution() { # id count dir base step
 }
 
 echo "[2/4] distribution 1"
-run_distribution "a100000000000000000000000000000000000000000000000000000000000001" "$COUNT1" artifacts/e2e/dist1 100 10
+run_distribution "b100000000000000000000000000000000000000000000000000000000000001" "$COUNT1" artifacts/e2e/dist1 100 10
 echo "[3/4] distribution 2"
-run_distribution "a200000000000000000000000000000000000000000000000000000000000002" "$COUNT2" artifacts/e2e/dist2 500 25
+run_distribution "b200000000000000000000000000000000000000000000000000000000000002" "$COUNT2" artifacts/e2e/dist2 500 25
 
 echo "[4/4] confirm claims landed"
 n=0
