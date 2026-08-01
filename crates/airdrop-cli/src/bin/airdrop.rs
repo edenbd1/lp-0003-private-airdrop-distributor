@@ -57,6 +57,20 @@ enum Cmd {
         #[arg(long)]
         out: String,
     },
+    /// Claim from the published encrypted bundle: given only your secret and the
+    /// bundle, find and open your row, verify it reconstructs the committed leaf,
+    /// and emit the SPEL `claim` arguments. This is the recipient-side flow that
+    /// needs no per-recipient private channel.
+    ClaimFromBundle {
+        /// Directory produced by demo-distribution (holds distribution.json and bundle.json).
+        #[arg(long)]
+        dir: String,
+        /// Your 32-byte secret (nsk) as hex.
+        #[arg(long)]
+        nsk: String,
+        #[arg(long)]
+        out: String,
+    },
 }
 
 #[derive(Serialize, Deserialize)]
@@ -145,10 +159,111 @@ fn demo_distribution(
         serde_json::to_string_pretty(&recs)?,
     )?;
 
+    // The publishable encrypted bundle: each recipient's claim data sealed to a
+    // key derived from their secret, in a shuffled order so position leaks
+    // nothing. A recipient needs only this file and their nsk to claim.
+    let mut bundle: Vec<airdrop_crypto::EncryptedRow> = recs
+        .iter()
+        .map(|r| {
+            let nsk = hex32(&r.nsk_hex)?;
+            let payload = airdrop_crypto::RowPayload {
+                allocation: r.allocation,
+                salt: hex32(&r.salt_hex)?,
+                leaf_index: r.leaf_index,
+                merkle_path: r
+                    .merkle_path_hex
+                    .iter()
+                    .map(|s| hex32(s))
+                    .collect::<Result<_>>()?,
+            };
+            Ok(airdrop_crypto::encrypt_row(
+                &airdrop_crypto::enc_public_key(&nsk),
+                &serde_json::to_vec(&payload)?,
+                None,
+            ))
+        })
+        .collect::<Result<_>>()?;
+    // Shuffle by a hash of the ephemeral key so bundle order is not the tree order.
+    bundle.sort_by_key(|row| row.ephemeral_public);
+    std::fs::write(
+        format!("{out}/bundle.json"),
+        serde_json::to_string_pretty(&bundle)?,
+    )?;
+
     println!("distribution id   {}", dist.id_hex);
     println!("eligibility root  {}", dist.root_hex);
     println!("recipients        {count}");
-    println!("wrote             {out}/distribution.json, {out}/recipients.json");
+    println!(
+        "wrote             {out}/distribution.json, {out}/recipients.json, {out}/bundle.json"
+    );
+    Ok(())
+}
+
+fn claim_from_bundle(dir: &str, nsk_hex: &str, out: &str) -> Result<()> {
+    let dist: DistributionFile =
+        serde_json::from_slice(&std::fs::read(format!("{dir}/distribution.json"))?)?;
+    let bundle: Vec<airdrop_crypto::EncryptedRow> =
+        serde_json::from_slice(&std::fs::read(format!("{dir}/bundle.json"))?)?;
+    let nsk = hex32(nsk_hex)?;
+    let keys = airdrop_crypto::derive_enc_keypair(&nsk);
+
+    // Trial-open each row; the one that verifies is ours.
+    let payload: airdrop_crypto::RowPayload = bundle
+        .iter()
+        .find_map(|row| airdrop_crypto::decrypt_row(&keys, row))
+        .and_then(|pt| serde_json::from_slice(&pt).ok())
+        .context("no row in the bundle opens for this secret")?;
+
+    let distribution_id = hex32(&dist.id_hex)?;
+    let distribution_root = hex32(&dist.root_hex)?;
+    let identifier = 0u128;
+
+    let nullifier = compute_claim_nullifier(&distribution_id, &nsk);
+    let marker_seed = compute_claim_marker(&distribution_id, &nullifier);
+    let witness = ClaimWitness {
+        nsk,
+        identifier,
+        allocation: payload.allocation,
+        salt: payload.salt,
+        merkle_path: payload.merkle_path,
+        leaf_index: payload.leaf_index,
+    };
+    let statement = ClaimStatement {
+        distribution_root,
+        distribution_id,
+        allocation: payload.allocation,
+        nullifier,
+    };
+    // Verify the decrypted row reconstructs a leaf that anchors to the committed
+    // root before spending a proof: a malicious distributor cannot make us prove
+    // a leaf that is not in the set.
+    airdrop_core::claim(&witness, &statement).map_err(|e| {
+        anyhow::anyhow!("the decrypted row does not anchor to the committed root: {e:?}")
+    })?;
+
+    let instruction = airdrop_core::ClaimInstruction {
+        witness,
+        statement,
+    };
+    let words: Vec<u32> = risc0_zkvm::serde::to_vec(&instruction)?;
+    let hexq = |b: &[u8; 32]| format!("'{}'", hex::encode(b));
+    let lines = [
+        format!(
+            "--witness-words '{}'",
+            words.iter().map(u32::to_string).collect::<Vec<_>>().join(",")
+        ),
+        format!("--distribution-root {}", hexq(&distribution_root)),
+        format!("--distribution-id {}", hexq(&distribution_id)),
+        format!("--allocation {}", payload.allocation),
+        format!("--nullifier {}", hexq(&nullifier)),
+        format!("--claim-marker-seed {}", hexq(&marker_seed)),
+    ];
+    std::fs::write(out, lines.join("\n") + "\n")?;
+    println!("opened your row from the bundle");
+    println!("allocation       {}", payload.allocation);
+    println!("nullifier        {}", hex::encode(nullifier));
+    println!("marker seed      {}", hex::encode(marker_seed));
+    println!("wrote            {out}");
     Ok(())
 }
 
@@ -230,5 +345,6 @@ fn main() -> Result<()> {
             demo_distribution(count, hex32(&id)?, base, step, &out)
         }
         Cmd::ClaimArgs { dir, index, out } => claim_args(&dir, index, &out),
+        Cmd::ClaimFromBundle { dir, nsk, out } => claim_from_bundle(&dir, &nsk, &out),
     }
 }
