@@ -76,13 +76,19 @@ run_distribution() { # id count dir base step
 
   for i in $(seq 0 $((count-1))); do
     local args="$dir/claim_$i.args"
-    "$CLI" claim-args --dir "$dir" --index "$i" --out "$args" >/dev/null
+    # Recipient-side flow: claim from only the published encrypted bundle and the
+    # recipient's own secret, the way a real recipient would. The demo knows each
+    # secret from recipients.json; a real recipient supplies their own.
+    local nsk
+    nsk=$(python3 -c "import json;print(json.load(open('$dir/recipients.json'))[$i]['nsk_hex'])")
+    "$CLI" claim-from-bundle --dir "$dir" --nsk "$nsk" --out "$args" >/dev/null 2>&1 \
+      || { echo "  SKIP $id $i (row did not open)"; continue; }
     local flat; flat=$(tr '\n' ' ' < "$args")
     # A privacy transaction spends the signer's commitment, so the claimant's
     # private account must be re-synced before each claim or its membership proof
     # is stale and the sequencer drops the transaction.
     "$WALLET_BIN" account sync-private >/dev/null 2>&1 || true
-    echo "  claim $i of dist ${id:0:8} ..."
+    echo "  claim $i of dist ${id:0:8} (from encrypted bundle) ..."
     local out; out=$(eval "$SPEL_BIN" --idl "$IDL" --program "$VERIFIER" \
       --bin-claimlez "$CLAIM_LEZ" \
       -- claim --claimant "Private/$CLAIMANT" $flat 2>&1)
