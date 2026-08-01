@@ -1,0 +1,146 @@
+{
+  "version": "0.1.0",
+  "name": "claim_verifier",
+  "instructions": [
+    {
+      "name": "create_distribution",
+      "accounts": [
+        {
+          "name": "distribution",
+          "writable": true,
+          "signer": false,
+          "init": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "arg",
+                "path": "distribution_id"
+              },
+              {
+                "kind": "arg",
+                "path": "eligibility_root"
+              }
+            ]
+          }
+        },
+        {
+          "name": "authority",
+          "writable": false,
+          "signer": true,
+          "init": false
+        }
+      ],
+      "args": [
+        {
+          "name": "distribution_id",
+          "type": {
+            "array": [
+              "u8",
+              32
+            ]
+          }
+        },
+        {
+          "name": "eligibility_root",
+          "type": {
+            "array": [
+              "u8",
+              32
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "claim",
+      "accounts": [
+        {
+          "name": "claim_marker",
+          "writable": true,
+          "signer": false,
+          "init": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "arg",
+                "path": "claim_marker_seed"
+              }
+            ]
+          }
+        },
+        {
+          "name": "distribution",
+          "writable": false,
+          "signer": false,
+          "init": false,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "arg",
+                "path": "distribution_id"
+              },
+              {
+                "kind": "arg",
+                "path": "distribution_root"
+              }
+            ]
+          }
+        },
+        {
+          "name": "claimant",
+          "writable": false,
+          "signer": true,
+          "init": false
+        }
+      ],
+      "args": [
+        {
+          "name": "witness_words",
+          "type": {
+            "vec": "u32"
+          }
+        },
+        {
+          "name": "distribution_root",
+          "type": {
+            "array": [
+              "u8",
+              32
+            ]
+          }
+        },
+        {
+          "name": "distribution_id",
+          "type": {
+            "array": [
+              "u8",
+              32
+            ]
+          }
+        },
+        {
+          "name": "allocation",
+          "type": "u128"
+        },
+        {
+          "name": "nullifier",
+          "type": {
+            "array": [
+              "u8",
+              32
+            ]
+          }
+        },
+        {
+          "name": "claim_marker_seed",
+          "type": {
+            "array": [
+              "u8",
+              32
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}
