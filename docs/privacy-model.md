@@ -41,6 +41,18 @@ An observer does **not** learn:
   (`privacy_preserving_transaction/message.rs:14-24`), and the witness travels
   only in the instruction, only on that path.
 
+> **A claim must be submitted on the privacy path.** The witness carries the
+> recipient's root secret `nsk`, so it stays private only because a privacy
+> transaction does not publish instruction data. A *public* transaction publishes
+> `instruction_data` verbatim, which would disclose `nsk` and de-anonymise all of
+> that recipient's claims. Submitting publicly cannot forge or steal a claim (a
+> public transaction is re-executed and a bad claim still panics), but it would
+> leak the secret. The claim tooling (`airdrop` CLI, `deploy-and-claim.sh`) always
+> submits on the privacy path. The verifier program does not *itself* reject the
+> public path today; doing so in-program is a listed hardening in
+> [`limitations.md`](limitations.md), deferred because it changes the verifier
+> ImageID and would re-key every committed distribution.
+
 ## What the integrator can rely on
 
 An integration gating on "claimed distribution D" computes the marker address for
@@ -49,6 +61,16 @@ program. Because the marker seed commits to `distribution_id`, a marker from one
 distribution cannot be presented for another, and because claiming requires the
 marker to be uninitialised, a recipient can be counted at most once per
 distribution.
+
+> **Key proof-of-claim on `(distribution_id, root)`, not `distribution_id` alone.**
+> `create_distribution` is permissionless, so anyone can anchor another root under
+> the same `distribution_id` (a different PDA). The nullifier and marker commit to
+> `distribution_id` but not to the root, so a marker does not record *which* root
+> was claimed. This cannot enable a double-claim (the same `nsk` yields the same
+> marker across roots) or touch another distribution's funds, but an integrator
+> that keys eligibility on `distribution_id` only, ignoring the specific committed
+> root, could be misled by an attacker-anchored decoy root. Bind the root you
+> intend, as `verify-onchain-claim.sh` does.
 
 ## The encrypted bundle: how a recipient learns their row
 
