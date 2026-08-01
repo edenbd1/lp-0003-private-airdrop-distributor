@@ -95,6 +95,9 @@ struct Scenario {
     marker_seed: [u8; 32],
     /// The owner stamped on the distribution PDA. Non-default means anchored.
     distribution_owner: ProgramId,
+    /// The owner stamped on the claim-marker PDA. Non-default means the marker is
+    /// already initialised by a prior claim, which must make a second claim fail.
+    marker_owner: ProgramId,
 }
 
 impl Scenario {
@@ -132,6 +135,7 @@ impl Scenario {
             nullifier,
             marker_seed,
             distribution_owner: *verifier, // anchored: owned by the verifier program
+            marker_owner: ProgramId::default(), // fresh marker: no prior claim
         }
     }
 
@@ -158,7 +162,12 @@ impl Scenario {
         // Accounts in declaration order: claim_marker (init PDA), distribution
         // (read PDA), claimant (signer).
         let claim_marker = AccountWithMetadata {
-            account: Account::default(),
+            account: Account {
+                program_owner: self.marker_owner,
+                balance: 0,
+                data: Default::default(),
+                nonce: lee_core::account::Nonce(0),
+            },
             is_authorized: false,
             account_id: public_pda(pid, &[self.marker_seed]),
         };
@@ -336,6 +345,25 @@ fn an_inflated_allocation_is_rejected() {
     assert!(
         msg.contains("4006") || msg.to_lowercase().contains("allocation"),
         "expected the allocation rejection, got: {msg}"
+    );
+}
+
+/// The double-claim guard, exercised structurally. A first claim leaves a marker
+/// PDA owned by the verifier, so a second claim by the same recipient finds that
+/// PDA already initialised. The deployed binary must reject it on the `init`
+/// constraint (`AccountAlreadyInitialized`) — the half of double-claim prevention
+/// that nullifier determinism alone does not demonstrate.
+#[test]
+fn a_second_claim_on_an_initialized_marker_is_rejected() {
+    let elf = elf();
+    let pid = program_id(&elf);
+    let mut s = Scenario::honest(&pid);
+    s.marker_owner = pid; // a prior claim already stamped and owns the marker
+    let err = s.run(&elf, &pid).expect_err("a second claim must be rejected");
+    let msg = format!("{err:#}").to_lowercase();
+    assert!(
+        msg.contains("alreadyinitialized") || msg.contains("already initialized"),
+        "expected the already-initialised rejection, got: {msg}"
     );
 }
 
