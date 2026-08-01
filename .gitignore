@@ -2,3 +2,5 @@
 **/target
 # Keep guest lockfiles (needed for reproducible `cargo risczero build --locked`)
 # and the root workspace lock committed for a deployable project.
+.work
+app/build
