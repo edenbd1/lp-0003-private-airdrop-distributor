@@ -33,9 +33,9 @@ cmake --build build          # produces lp_0003_airdrop.lgx
 
 The packaged `.lgx` **is committed** at `app/lp-0003-airdrop.lgx` (built with the
 command above; the module-builder toolchain is not in this repository's CI, so the
-asset is committed rather than rebuilt on every push). It carries the
-`darwin-arm64` variant; on another platform, rebuild with the command above or use
-the cross-platform CLI.
+asset is committed rather than rebuilt on every push). It ships both a
+`darwin-arm64` and a `linux-amd64` variant; other platforms can rebuild with the
+command above or use the cross-platform CLI.
 
 ### Standalone build (developer preview)
 
@@ -56,8 +56,10 @@ Basecamp's PluginLoader picks it up on next launch.
 
 ## Packaged asset
 
-`app/lp-0003-airdrop.lgx` (843 KB, SHA-256 `d90db8c3a1d03315124b0c6c2cec7a4e3c15d18e620affc3e283b3cf9840aeae`) is the
+`app/lp-0003-airdrop.lgx` (1.5 MB, SHA-256 `42649f5fc12279d3ddfc45a0e7db781e407b6aae5e933378184ac8f0f0ccaab3`) is the
 packaged module, built with the Logos module builder and the `lgx` tool
-(`logos-package`). It carries the `darwin-arm64` variant: the plugin dylib, the
-QML view, the module metadata, and the `airdrop` CLI the bridge drives. Drop it
-into Basecamp's user-plugins directory to load it.
+(`logos-package`). It ships **two variants**, `darwin-arm64` and `linux-amd64`,
+each carrying the plugin (`.dylib`/`.so`), the QML view, the module metadata, and
+the `airdrop` CLI the bridge drives, so it loads in Basecamp on both macOS
+(arm64) and Linux (x86_64). Drop it into Basecamp's user-plugins directory to load
+it; `lgx manifest app/lp-0003-airdrop.lgx` lists the variants.
