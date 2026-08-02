@@ -34,7 +34,7 @@ re-checks any one of them over JSON-RPC.
 - **Narrated demo video:** ⚠️ pending — script at `VIDEO_SCRIPT.md`
 - **Solution write-up:** this document
 - **Deployment + how to re-verify:** [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md)
-- **Basecamp app:** `app/lp-0003-airdrop.lgx` (SHA-256 `d90db8c3a1d03315124b0c6c2cec7a4e3c15d18e620affc3e283b3cf9840aeae`)
+- **Basecamp app:** `app/lp-0003-airdrop.lgx` (SHA-256 `42649f5fc12279d3ddfc45a0e7db781e407b6aae5e933378184ac8f0f0ccaab3`), with both `darwin-arm64` and `linux-amd64` variants
 
 ## Public-testnet deployment
 
@@ -220,8 +220,8 @@ itself.
 - [x] **Module/SDK for building Logos modules.** `crates/airdrop-core` (the claim
       primitive) and `crates/airdrop-cli` (the `airdrop` tool).
 - [x] **Basecamp app GUI with local build instructions and a loadable asset.**
-      `app/`, packaged as `app/lp-0003-airdrop.lgx`. The `.lgx` currently carries a
-      `darwin-arm64` variant; the cross-platform surface is the CLI.
+      `app/`, packaged as `app/lp-0003-airdrop.lgx` with both a `darwin-arm64` and
+      a `linux-amd64` variant, so it loads in Basecamp on macOS and Linux.
 - [x] **SPEL IDL.** `idl/claim_verifier.idl.json`, both instructions.
 
 ### Reliability
@@ -276,8 +276,9 @@ is permissionless, so an integrator should key proof-of-claim on
 Two surfaces over one library: the `airdrop` CLI and the Basecamp app, both
 computing the same commitments from the same code. Onboarding is
 `git clone && ./scripts/demo.sh`. The CLI's refusals are written to be read by a
-human and explain why. The Basecamp `.lgx` targets macOS-arm64 today; the CLI is
-the cross-platform path.
+human and explain why. The Basecamp `.lgx` ships both a `darwin-arm64` and a
+`linux-amd64` variant, so it loads on macOS and Linux; the CLI is the
+cross-platform path beyond those.
 
 ### Reliability
 
