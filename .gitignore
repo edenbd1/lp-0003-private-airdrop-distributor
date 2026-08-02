@@ -8,3 +8,6 @@ app/build
 /app/darwin-arm64/
 /.demo-prove/
 /.demo-cap/
+/.linux-variant/
+/app/build-linux/
+/aqtinstall.log
