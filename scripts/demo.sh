@@ -90,8 +90,13 @@ fi
 echo "   refused: no row in the bundle opens for a secret that is not eligible."
 
 rule "7. compute cost"
-cargo test -p claim-verifier-tests --quiet -- --ignored --nocapture 2>&1 \
-  | grep -E 'user cycles|proving cycles|budget consumed' | sed 's/^/   /'
+if command -v r0vm >/dev/null 2>&1; then
+  cargo test -p claim-verifier-tests --quiet -- --ignored --nocapture 2>&1 \
+    | grep -E 'user cycles|proving cycles|budget consumed' | sed 's/^/   /'
+else
+  echo "   (measured through r0vm, which is absent here; see docs/benchmarks/cu-budget.md)"
+  echo "   claim: 333,565 user cycles / 524,288 proving cycles = 1.56% of the budget"
+fi
 
 rule "8. what an observer sees"
 python3 - "$WORK/claim.args" <<'PY'

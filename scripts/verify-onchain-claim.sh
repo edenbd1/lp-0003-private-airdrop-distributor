@@ -98,15 +98,17 @@ echo
 
 echo "[3/5] the embedded receipt is a Succinct STARK, not a dev-mode fake"
 if [ -n "$TX_B64" ]; then
-  KIND=$(python3 -c "
+  # Read the (large) base64 transaction from stdin, not argv: a claim tx is
+  # hundreds of KB, which exceeds the per-argument length limit on Linux.
+  KIND=$(printf '%s' "$TX_B64" | python3 -c "
 import sys, base64
-raw = base64.b64decode(sys.argv[1])
+raw = base64.b64decode(sys.stdin.read())
 found = -1
 for off in range(1, len(raw) - 5):
     n = int.from_bytes(raw[off:off+4], 'little')
     if n > 100000 and off + 4 + n == len(raw):
         found = raw[off + 4]; break
-print(found)" "$TX_B64")
+print(found)")
   case "$KIND" in
     1) ok "InnerReceipt variant 1 = Succinct (a real STARK)" ;;
     0) ok "InnerReceipt variant 0 = Composite (a real STARK)" ;;
