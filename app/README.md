@@ -124,20 +124,30 @@ variant is `linux-amd64`. Restart Basecamp; the module appears in the left rail.
 
 ### How this was verified against Basecamp 0.2.2
 
-Shipping a `.lgx` is not the same as it loading, so both failure modes were
-checked on the real app:
+Shipping a `.lgx` is not the same as it loading, so it was run on the real app.
+Installed as above on LogosBasecamp 0.2.2 (official macOS arm64 release), the
+module loads:
 
-- **It appears.** Installed as above, the module shows a tile in Basecamp 0.2.2's
-  left rail. This depends on the manifest carrying `type: "ui"`; `lgx add` leaves
-  it empty, so `package-lgx.py` folds it in (see below). With an empty `type` the
-  module is invisible.
-- **It loads.** Basecamp loads the plugin with `QPluginLoader` and
-  `qobject_cast<IComponent*>`. Reproducing exactly that against Basecamp's Qt
-  6.9.2, the committed `darwin-arm64` dylib reports IID
-  `com.logos.component.IComponent`, `load()` succeeds, and the cast returns a
-  valid `IComponent`. The same test against a Homebrew build fails with
-  *"incompatible Qt library (6.11.0)"* — the difference the Qt and ABI notes
-  above are about.
+```
+App launcher clicked: "lp-0003-airdrop"
+Loading UI module: "lp-0003-airdrop"
+MainContainer: Added plugin dock to WorkspaceArea: "lp-0003-airdrop"
+Successfully loaded UI module: "lp-0003-airdrop"
+```
+
+The **Private Airdrop Claim** surface renders and is usable. Driven end to end: a
+distribution of 8 recipients generated with the CLI shipped inside the package,
+then **Build claim** produced a nullifier and a marker seed and wrote
+`claim_gui.args` — with the CLI field left empty, so the `dladdr` resolution of
+the packaged `airdrop` binary works. The tile appears only because the manifest
+carries `type: "ui"`; `lgx add` leaves it empty, so `package-lgx.py` folds it in
+(see below), and with an empty `type` the module is invisible.
+
+From a clean clone without a GUI, the load can also be reproduced with
+`QPluginLoader` against Basecamp's Qt 6.9.2: the committed `darwin-arm64` dylib
+reports IID `com.logos.component.IComponent`, `load()` succeeds, and
+`qobject_cast<IComponent*>` returns a valid instance, where a Homebrew build fails
+with *"incompatible Qt library (6.11.0)"*.
 
 Verify the package matches its own manifest:
 
