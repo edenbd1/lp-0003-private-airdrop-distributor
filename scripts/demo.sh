@@ -19,8 +19,11 @@
 #
 #   ./scripts/demo.sh
 #
-# Needs: a Rust toolchain and `spel` on PATH (for step 0's program id) plus
-# curl/python3 for the on-chain read. No funded account, no local sequencer.
+# Needs: a Rust toolchain and curl/python3. Step 3 (the deployed-binary tests
+# through the sequencer's executor) additionally needs the risc0 VM `r0vm`
+# (`cargo risczero install`); if it is absent the step is skipped with a note
+# rather than failing. `spel` on PATH is optional (step 0's program id). No
+# funded account, no local sequencer.
 
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -59,7 +62,12 @@ rule "3. the on-chain checks, through the sequencer's executor"
 echo "6 tests against the built verifier binary: an honest claim accepted, and"
 echo "forged nullifier / unanchored root / inflated allocation / forged marker /"
 echo "double-claim each rejected with its documented error code."
-cargo test -p claim-verifier-tests --quiet 2>&1 | grep -E "result: ok\. [1-9]" | sed 's/^/   /'
+if command -v r0vm >/dev/null 2>&1; then
+  cargo test -p claim-verifier-tests --quiet 2>&1 | grep -E "result: ok\. [1-9]" | sed 's/^/   /'
+else
+  echo "   (skipped: needs the risc0 VM r0vm, install with 'cargo risczero install';"
+  echo "    CI runs these on every push against the committed binary)"
+fi
 
 rule "4. a distribution, padded so its size is hidden"
 cargo build --release --quiet -p airdrop-cli

@@ -54,7 +54,9 @@ commitment.
 
 ## Quickstart
 
-From a clean clone, with a Rust toolchain and `spel` on PATH:
+From a clean clone, with a Rust toolchain (and, for step 3's deployed-binary
+tests, the risc0 VM `r0vm` from `cargo risczero install`; the step is skipped with
+a note if it is absent):
 
 ```
 ./scripts/demo.sh
