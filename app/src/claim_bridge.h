@@ -25,5 +25,7 @@ public:
     Q_INVOKABLE void setCliPath(const QString& path);
 
 private:
-    QString m_cli = QStringLiteral("airdrop");
+    // Set in the constructor to the `airdrop` shipped alongside this plugin; see
+    // resolveCli() in the .cpp. Only overridden if QML calls setCliPath().
+    QString m_cli;
 };

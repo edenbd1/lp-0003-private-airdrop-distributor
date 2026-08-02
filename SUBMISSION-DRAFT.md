@@ -34,7 +34,7 @@ re-checks any one of them over JSON-RPC.
 - **Narrated demo video:** ⚠️ pending — script at `VIDEO_SCRIPT.md`
 - **Solution write-up:** this document
 - **Deployment + how to re-verify:** [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md)
-- **Basecamp app:** `app/lp-0003-airdrop.lgx` (SHA-256 `42649f5fc12279d3ddfc45a0e7db781e407b6aae5e933378184ac8f0f0ccaab3`), with both `darwin-arm64` and `linux-amd64` variants
+- **Basecamp app:** `app/lp-0003-airdrop.lgx` (SHA-256 `cd999028b4461539880c19f755c1ab2fe667c2c2c2e1c03dbd6419c154b08955`), with both `darwin-arm64` and `linux-amd64` variants
 
 ## Public-testnet deployment
 
