@@ -59,7 +59,7 @@ echo "for no one, and a recovered row reconstructs the exact committed leaf."
 cargo test -p airdrop-crypto --quiet 2>&1 | grep -E "result: ok\. [1-9]" | sed 's/^/   /'
 
 rule "3. the on-chain checks, through the sequencer's executor"
-echo "6 tests against the built verifier binary: an honest claim accepted, and"
+echo "7 tests against the built verifier binary: an honest claim accepted, a"
 echo "forged nullifier / unanchored root / inflated allocation / forged marker /"
 echo "double-claim each rejected with its documented error code."
 if command -v r0vm >/dev/null 2>&1; then
