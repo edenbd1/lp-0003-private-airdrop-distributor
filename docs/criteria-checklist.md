@@ -29,7 +29,7 @@ satisfies it. Codes: ✅ done, 🔧 scripted and reproducible, pending a live ru
 | Criterion | Evidence |
 |---|---|
 | Proof-generation failures surface a clear error | ✅ the CLI proves the witness locally first and fails with the exact `ClaimError`; `airdrop-cli`. |
-| A failed/rejected claim does not mark the claimant as claimed | ✅ the marker PDA is claimed only on a successful transaction; a rejected claim creates nothing, so the nullifier is not consumed and the recipient can retry. |
+| A failed/rejected claim does not mark the claimant as claimed | ✅ the marker PDA is claimed only on a successful transaction; a rejected claim creates nothing, so the nullifier is not consumed and the recipient can retry. Demonstrated end to end against the deployed binary: `claim-verifier-tests::a_rejected_claim_leaves_the_recipient_free_to_retry` rejects an inflated first attempt, then accepts the honest retry with the same nullifier. |
 | Deterministic, documented error codes | ✅ `docs/error-codes.md`; codes `4001`-`4006` exercised by `claim-verifier-tests`. |
 
 ## Performance

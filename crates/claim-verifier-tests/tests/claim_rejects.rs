@@ -296,6 +296,27 @@ fn an_honest_claim_is_accepted() {
         .expect("an eligible recipient with an anchored root must be accepted");
 }
 
+/// Reliability R2: a rejected claim does not mark the claimant, so a retry works.
+/// A first attempt with an inflated allocation is rejected; because it never
+/// created the marker PDA (the marker is `init`, stamped only on a successful
+/// claim), the same recipient — same nullifier, same marker seed — then submits
+/// the honest claim and it is accepted. The rejection consumed nothing.
+#[test]
+fn a_rejected_claim_leaves_the_recipient_free_to_retry() {
+    let elf = elf();
+    let pid = program_id(&elf);
+    // Changing only the allocation keeps the nullifier and marker seed identical,
+    // so this is genuinely the same recipient's attempt.
+    let mut bad = Scenario::honest(&pid);
+    bad.allocation = bad.witness.allocation * 7;
+    bad.run(&elf, &pid).expect_err("the inflated first attempt must be rejected");
+    // The marker was never stamped (marker_owner still default), so the honest
+    // retry by the same recipient is accepted.
+    Scenario::honest(&pid)
+        .run(&elf, &pid)
+        .expect("after a rejection the honest retry with the same nullifier is accepted");
+}
+
 /// The invented-root attack: a claimant proves membership against a root they
 /// made up. Because no distribution was committed for that root, the
 /// distribution PDA is uninitialised (default owner) and the claim is rejected.

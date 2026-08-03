@@ -123,7 +123,7 @@ pendant que tu parles.
 
 **💬 SAY** :
 
-> "Ten adversarial tests on the claim logic — non-members, borrowed Merkle paths, invented roots, forged nullifiers, inflated allocations, redirected destinations. Ten more on the encrypted bundle. Then six against the built verifier binary, run through the sequencer's own executor — same executor, same input order, same thirty-two megabyte session limit the chain applies. A rejection you see there is the rejection the chain performs."
+> "Ten adversarial tests on the claim logic — non-members, borrowed Merkle paths, invented roots, forged nullifiers, inflated allocations, redirected destinations. Ten more on the encrypted bundle. Then seven against the built verifier binary, run through the sequencer's own executor — same executor, same input order, same thirty-two megabyte session limit the chain applies. A rejection you see there is the rejection the chain performs."
 
 **🎬 ACTION** : Scrolle sur `== 4.` et `== 5.`
 

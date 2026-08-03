@@ -368,7 +368,7 @@ rather than hidden behind the cycle count.
 
 ### Supportability
 
-28 tests across the workspace plus an executor-level suite against the deployed
+29 tests across the workspace plus an executor-level suite against the deployed
 binary, all green in CI, which runs the adversarial e2e unconditionally and fails
 on any ImageID drift. The two guest crates are excluded from the host workspace
 because they target `riscv32im-risc0-zkvm-elf`, but the deployed verifier is still
