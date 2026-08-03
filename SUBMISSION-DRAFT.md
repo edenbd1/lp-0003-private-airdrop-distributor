@@ -221,7 +221,9 @@ itself.
       primitive) and `crates/airdrop-cli` (the `airdrop` tool).
 - [x] **Basecamp app GUI with local build instructions and a loadable asset.**
       `app/`, packaged as `app/lp-0003-airdrop.lgx` with both a `darwin-arm64` and
-      a `linux-amd64` variant, so it loads in Basecamp on macOS and Linux.
+      a `linux-amd64` variant. Verified loading in LogosBasecamp 0.2.2
+      (`Successfully loaded UI module: "lp-0003-airdrop"`) and driven to a built
+      claim; see [`app/README.md`](app/README.md).
 - [x] **SPEL IDL.** `idl/claim_verifier.idl.json`, both instructions.
 
 ### Reliability
