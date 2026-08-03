@@ -117,7 +117,12 @@ verification of a deployed claim.
   `scripts/e2e-local-sequencer.sh` starts its own standalone `sequencer_service`,
   deploys both programs, commits a distribution, and submits a real
   `RISC0_DEV_MODE=0` privacy claim it then verifies over RPC — no funded account,
-  no public testnet. It is the `.github/workflows/e2e-local-sequencer.yml` CI job.
+  no public testnet. It needs a `logos-execution-zone` checkout to build the
+  sequencer from (`git clone https://github.com/logos-blockchain/logos-execution-zone _external/lez`,
+  or point `LEZ_SRC` at an existing one); the script header lists the env vars.
+  This is what the `.github/workflows/e2e-local-sequencer.yml` CI job runs, which
+  clones LEZ for you. The zero-dependency clean-clone demo is `scripts/demo.sh`
+  above.
 - **Full create-then-claim on the public testnet** (real proving, funded account
   needed): `scripts/deploy-and-claim.sh`; see [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md).
 
