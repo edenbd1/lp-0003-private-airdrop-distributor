@@ -56,8 +56,9 @@ ferme Slack/Discord/notifications, fenêtre terminal en plein écran.
 démo prêt à pointer. Réinstalle depuis le package committé avant d'enregistrer :
 
 ```bash
+LGX=/Users/eden/logos/src/logos-package/build/lgx   # pas sur le PATH, chemin complet
 DST=~/Library/Application\ Support/Logos/LogosBasecamp/plugins/lp-0003-airdrop
-rm -rf "$DST" && lgx extract app/lp-0003-airdrop.lgx --variant darwin-arm64 --output /tmp/x
+rm -rf "$DST" && "$LGX" extract app/lp-0003-airdrop.lgx --variant darwin-arm64 --output /tmp/x
 mkdir -p "$DST" && cp -R /tmp/x/darwin-arm64/. "$DST/"
 printf darwin-arm64 > "$DST/variant"
 tar xzOf app/lp-0003-airdrop.lgx manifest.json > "$DST/manifest.json"
@@ -123,7 +124,7 @@ pendant que tu parles.
 
 **💬 SAY** :
 
-> "Ten adversarial tests on the claim logic — non-members, borrowed Merkle paths, invented roots, forged nullifiers, inflated allocations, redirected destinations. Ten more on the encrypted bundle. Then seven against the built verifier binary, run through the sequencer's own executor — same executor, same input order, same thirty-two megabyte session limit the chain applies. A rejection you see there is the rejection the chain performs."
+> "Ten adversarial tests on the claim logic — non-members, borrowed Merkle paths, invented roots, forged nullifiers, inflated allocations, redirected destinations — plus two that round-trip the tree builder at every set size, so twelve here. Ten more on the encrypted bundle. Then seven against the built verifier binary, run through the sequencer's own executor — same executor, same input order, same thirty-two megabyte session limit the chain applies. A rejection you see there is the rejection the chain performs."
 
 **🎬 ACTION** : Scrolle sur `== 4.` et `== 5.`
 
