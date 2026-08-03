@@ -113,8 +113,13 @@ verification of a deployed claim.
   directory and launch; the `lp-0003-airdrop` tile drives the same `airdrop` CLI,
   so it computes the same commitments as the chain. Install commands and the load
   contract are in [`app/README.md`](app/README.md).
-- **Full create-then-claim on testnet** (real proving, funded account needed):
-  `scripts/deploy-and-claim.sh`; see [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md).
+- **Full lifecycle against a real sequencer, from nothing.**
+  `scripts/e2e-local-sequencer.sh` starts its own standalone `sequencer_service`,
+  deploys both programs, commits a distribution, and submits a real
+  `RISC0_DEV_MODE=0` privacy claim it then verifies over RPC — no funded account,
+  no public testnet. It is the `.github/workflows/e2e-local-sequencer.yml` CI job.
+- **Full create-then-claim on the public testnet** (real proving, funded account
+  needed): `scripts/deploy-and-claim.sh`; see [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md).
 
 ## Verify it yourself
 

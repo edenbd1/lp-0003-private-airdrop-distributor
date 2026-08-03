@@ -43,8 +43,8 @@ satisfies it. Codes: ✅ done, 🔧 scripted and reproducible, pending a live ru
 | Criterion | Evidence |
 |---|---|
 | Deployed and tested on LEZ testnet | ✅ two programs live (`docs/DEPLOYMENT.md`). |
-| E2E tests against a LEZ sequencer in CI | ✅ `claim-verifier-tests` runs the deployed binary through the sequencer's executor in CI; 🔧 a standalone-sequencer round trip via `scripts/deploy-and-claim.sh`. |
+| E2E tests against a LEZ sequencer in CI | ✅ two levels. `claim-verifier-tests` runs the deployed binary through the sequencer's executor on every push (`ci.yml`). `scripts/e2e-local-sequencer.sh` starts a real standalone `sequencer_service`, deploys, commits a distribution, and submits a real `RISC0_DEV_MODE=0` privacy claim it verifies over RPC; wired into `.github/workflows/e2e-local-sequencer.yml` (scheduled + on demand). Run locally end to end: a claim lands as a PrivacyPreserving tx with a Succinct receipt and the marker is owned by the verifier. |
 | CI green on the default branch | ✅ `.github/workflows/ci.yml`. |
 | README documents end-to-end usage | ✅ `README.md`, `docs/DEPLOYMENT.md`. |
-| Reproducible end-to-end demo, `RISC0_DEV_MODE=0` | 🔧 `scripts/deploy-and-claim.sh`. |
+| Reproducible end-to-end demo, `RISC0_DEV_MODE=0` | ✅ `scripts/e2e-local-sequencer.sh` reproduces the whole flow from nothing — it spins up its own sequencer, so it needs no funded account or public testnet — and was run to a green `VERIFIED`. `scripts/deploy-and-claim.sh` is the same flow against the public testnet (needs a funded account). |
 | Recorded video demo | 🔧 not yet recorded; script and PDF ready at `VIDEO_SCRIPT.md`, to show `RISC0_DEV_MODE=0` and real proof generation. |
