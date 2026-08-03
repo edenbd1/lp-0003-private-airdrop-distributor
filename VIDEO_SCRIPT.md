@@ -49,6 +49,21 @@ ferme Slack/Discord/notifications, fenêtre terminal en plein écran.
 > `instruction_data`). On lit la chaîne en RPC à la place, à la scène 2 et à la
 > scène 3, qui est la source de vérité.
 
+## Basecamp (pour la scène 4)
+
+**🎬 ACTION** : Basecamp **déjà lancé et à jour**, avec le `.lgx` committé installé
+(la tuile `lp-0003-airdrop` visible dans la sidebar), et un dossier de distribution
+démo prêt à pointer. Réinstalle depuis le package committé avant d'enregistrer :
+
+```bash
+DST=~/Library/Application\ Support/Logos/LogosBasecamp/plugins/lp-0003-airdrop
+rm -rf "$DST" && lgx extract app/lp-0003-airdrop.lgx --variant darwin-arm64 --output /tmp/x
+mkdir -p "$DST" && cp -R /tmp/x/darwin-arm64/. "$DST/"
+printf darwin-arm64 > "$DST/variant"
+tar xzOf app/lp-0003-airdrop.lgx manifest.json > "$DST/manifest.json"
+# puis relance Basecamp et vérifie que la tuile apparaît et que le claim marche
+```
+
 ## Vérif de dernière seconde (30 s, avant d'enregistrer)
 
 **🎬 ACTION** :
@@ -172,9 +187,32 @@ s'afficher jusqu'à `VERIFIED`.
 
 ---
 
-# SCÈNE 4 — L'audit (5:15 – 6:15)
+# SCÈNE 4 — L'app Basecamp (5:15 – 6:15)
 
-**🎬 ACTION** : Reste sur le terminal
+**🎬 ACTION** : Passe sur Basecamp (déjà ouvert, la tuile LP-0003 dans la
+sidebar). Clique la tuile **lp-0003-airdrop**.
+
+**💬 SAY** :
+
+> "The same primitive, in a G-U-I. This is the L-P zero-zero-zero-three app, loaded in Logos Basecamp two point two — the real app, from the package committed in the repo, not a mockup."
+
+**🎬 ACTION** : La surface **Private Airdrop Claim** s'affiche. Pointe le champ
+distribution sur un dossier de distribution démo, choisis un destinataire, clique
+**Build claim**.
+
+**💬 SAY** :
+
+> "I point it at a distribution, pick a recipient, and build the claim. It prints a nullifier, a marker seed, and writes the claim args. And notice the C-L-I path field is empty: the app resolves the airdrop binary shipped inside the package itself, with dladdr, so a freshly installed package just works."
+
+**💬 SAY** :
+
+> "The G-U-I and the chain compute the same commitments from the same code, because the app shells out to that same airdrop C-L-I. There is no second implementation to drift."
+
+---
+
+# SCÈNE 5 — L'audit (6:15 – 7:15)
+
+**🎬 ACTION** : Reviens sur le terminal
 
 **💬 SAY** :
 
@@ -194,13 +232,13 @@ s'afficher jusqu'à `VERIFIED`.
 
 ---
 
-# SCÈNE 5 — Closing (6:15 – 7:00)
+# SCÈNE 6 — Closing (7:15 – 8:00)
 
 **🎬 ACTION** : Passe sur l'ONGLET A (le repo)
 
 **💬 SAY** :
 
-> "To summarize. Two programs deployed on the public L-E-Z testnet, byte-identical to what's in the repository — you can check that from the deployment transaction hash. Three distributions committed, and twenty-three privacy-preserving claims landed and independently verifiable. Documented compute cost, a SPEL I-D-L, a Basecamp app, a demo script that runs from a clean clone, and green C-I with the adversarial tests running against the deployed binary on every push."
+> "To summarize. Two programs deployed on the public L-E-Z testnet, byte-identical to what's in the repository — you can check that from the deployment transaction hash. Three distributions committed, and twenty-three privacy-preserving claims landed and independently verifiable. Documented compute cost, a SPEL I-D-L, the Basecamp app you just saw loading and running, a demo script that runs from a clean clone, and green C-I with the adversarial tests running against the deployed binary on every push."
 
 **💬 SAY** :
 
@@ -257,6 +295,9 @@ s'afficher jusqu'à `VERIFIED`.
 - **Diffie-Hellman** = "DIFF-ee HELL-man"
 - **nullifier** = "NULL-ifier"
 - **IDL** = "I-D-L" (épelle)
+- **dladdr** = "D-L-addr" (épelle D-L, puis "adder")
+- **Basecamp** = "Basecamp"
+- **.lgx** = "dot L-G-X" (épelle)
 - **edenbd1** = "eden-B-D-one"
 
 ---
@@ -268,9 +309,10 @@ s'afficher jusqu'à `VERIFIED`.
 | 1. Intro | 0:00 | 0:45 | 45s |
 | 2. demo.sh | 0:45 | 3:15 | 2m30 |
 | 3. Preuve en direct | 3:15 | 5:15 | 2m00 (proving accéléré) |
-| 4. L'audit | 5:15 | 6:15 | 1m00 |
-| 5. Closing | 6:15 | 7:00 | 45s |
-| **Total** | | | **~7 min** |
+| 4. L'app Basecamp | 5:15 | 6:15 | 1m00 |
+| 5. L'audit | 6:15 | 7:15 | 1m00 |
+| 6. Closing | 7:15 | 8:00 | 45s |
+| **Total** | | | **~8 min** |
 
 Entre 5 et 8 minutes c'est bon. Le brief demande une narration qui explique
 l'architecture et les décisions — pas un screencast muet. La scène 3 montre une
