@@ -59,9 +59,12 @@ landed against them (10 + 7 + 6):
 
 The full list of (distribution, claim tx, nullifier) is committed at
 [`artifacts/e2e/claims.tsv`](artifacts/e2e/claims.tsv). A claim is a
-**privacy-preserving** transaction, so it publishes no instruction data and is
-**not shown by the block explorer** — that is the privacy property working, not a
-dead transaction. Verify any claim from public data over JSON-RPC:
+**privacy-preserving** transaction, so it publishes no `program_id` or
+`instruction_data`. It is live over RPC (`getTransaction`) but not shown by the
+block explorer, whose coverage is irregular and also drops a public
+`create_distribution` (measured, see [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md)),
+so the RPC is the source of truth. Verify any claim from public data over
+JSON-RPC:
 
 ```bash
 CLAIM_TX=5cb5148572e92cced712a1e5af756b9f3e9b886e284c12f21324c6c8e5c0f9a0 \
@@ -287,7 +290,7 @@ cross-platform path beyond those.
 Local pre-verification before proving; a marker written only on success;
 deterministic error codes `4001`–`4006`. The scripts confirm a claim by polling
 `getTransaction` over RPC rather than by trusting the block explorer, which does
-not show privacy-preserving transactions (see below), so a landed claim is never
+not hold every transaction the RPC does (see below), so a landed claim is never
 mistaken for a failed one.
 
 ### Performance
@@ -329,21 +332,23 @@ until you hit them and neither is a program bug:
    transaction spends the signer's commitment, so a second claim built against a
    stale commitment is dropped by the sequencer. `account sync-private` before
    each claim fixes it, and `scripts/deploy-and-claim.sh` does so.
-2. **The block explorer does not show privacy transactions.** A privacy claim
-   publishes no instruction data, so the explorer's transaction page reads "not
-   found" and the marker page can show a stale default owner, while
-   `getTransaction`/`getAccount` report the real state over RPC. Verification
-   therefore reads the chain over RPC, which is what `scripts/verify-onchain-claim.sh`
-   does. This is a Logos indexer limitation, not a dead transaction, and is
-   reported upstream at `logos-blockchain/lez-explorer-ui#15`.
+2. **The block explorer and the privacy design are two separate things, and
+   conflating them weakens the second.** (a) The explorer's index is irregular:
+   measured, two of the six on-chain transactions do not display, and one is a
+   *public* `create_distribution` while the two public distributions before it
+   do, and a cannot-exist hash returns the same "not found" — so "not shown"
+   means "no index record", not "dead", and `getTransaction` returns all six.
+   That is a Logos indexer limitation unrelated to the design, filed upstream at
+   `logos-blockchain/lez-explorer-ui#15`. (b) Independently, a privacy transaction
+   publishes no `program_id` or `instruction_data`, so it is unattributable even
+   with a perfect indexer, which is the point of the scheme.
+   `scripts/verify-onchain-claim.sh` establishes it from the marker PDA, and
+   [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) shows the full measurement.
 
 ## Outstanding
 
 - **The narrated video has not been recorded.** `VIDEO_SCRIPT.md` has the full
   script. Nothing in this submission claims otherwise.
-
-The explorer's failure to show privacy transactions is filed upstream at
-`logos-blockchain/lez-explorer-ui#15`.
 
 ## Terms & Conditions
 
