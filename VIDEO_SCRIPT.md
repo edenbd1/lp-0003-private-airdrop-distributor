@@ -11,11 +11,14 @@
 > annoncées sont les vraies. Si quelque chose ne sort pas comme écrit, arrête et
 > dis-le-moi plutôt que d'improviser.
 
-> **Le point délicat de cette soumission : une transaction privacy est invisible
-> sur l'explorer, et le wallet peut afficher "Transaction NOT confirmed" alors
-> qu'elle atterrit.** On ne cache pas ça — on l'explique et on lit la chaîne
-> directement en RPC, ce qui est plus fort qu'un explorer et ne peut pas
-> t'afficher une page vide en pleine caméra.
+> **Le point délicat : l'explorer ne montre pas tout.** Son index est irrégulier
+> et rate certaines de nos transactions, même une `create_distribution` publique,
+> alors qu'elles sont toutes vivantes en RPC. Ça n'a rien à voir avec le design.
+> Séparément, une transaction privacy ne publie ni `program_id` ni
+> `instruction_data`, donc elle serait non-attribuable même avec un indexeur
+> parfait, et ça c'est le sujet de la soumission. On ne mélange pas les deux : on
+> lit la chaîne en RPC, plus fort qu'un explorer et qui ne peut pas t'afficher une
+> page vide en pleine caméra.
 
 ---
 
@@ -39,11 +42,12 @@ ferme Slack/Discord/notifications, fenêtre terminal en plein écran.
 
 → **[Repo : edenbd1/lp-0003-private-airdrop-distributor](https://github.com/edenbd1/lp-0003-private-airdrop-distributor)**
 
-> **Pas d'onglet block explorer.** Une transaction privacy ne publie ni
-> `program_id` ni `instruction_data`, donc l'indexeur de l'explorer n'a rien à
-> afficher pour un claim. C'est la propriété de confidentialité qui fonctionne,
-> pas un bug — et c'est exactement ce qu'on montre en lisant la chaîne
-> directement, à la scène 2 et à la scène 3.
+> **Pas d'onglet block explorer.** Deux raisons distinctes. Un, l'index de
+> l'explorer est irrégulier et rate certaines de nos transactions, même une
+> publique, donc une page "not found" en caméra ne prouverait rien. Deux, une
+> transaction privacy est non-attribuable par construction (ni `program_id` ni
+> `instruction_data`). On lit la chaîne en RPC à la place, à la scène 2 et à la
+> scène 3, qui est la source de vérité.
 
 ## Vérif de dernière seconde (30 s, avant d'enregistrer)
 
@@ -164,7 +168,7 @@ s'afficher jusqu'à `VERIFIED`.
 
 **💬 SAY** (quand le `VERIFIED` apparaît) :
 
-> "There it is. A real proof, dev mode off, submitted on the privacy path — and the script reads it straight back off the chain. Privacy-preserving, a Succinct STARK the sequencer verified, and the marker owned by the verifier. The block explorer would show this same transaction as *not found* — by design, because a privacy transaction publishes no data. That is why verification reads the chain directly."
+> "There it is. A real proof, dev mode off, submitted on the privacy path, and the script reads it straight back off the chain: a Succinct STARK the sequencer verified, and the marker owned by the verifier. Two quick notes on the explorer. It does not show this transaction, but that is the explorer's index, not the chain: it also misses one of our public transactions, and the R-P-C returns all of them. And separately, a privacy transaction publishes no program id and no instruction data, so it is unattributable by design. That is why verification reads the chain directly."
 
 ---
 
