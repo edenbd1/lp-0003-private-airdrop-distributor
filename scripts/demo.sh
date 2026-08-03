@@ -132,5 +132,7 @@ else
 fi
 
 printf '\n\033[1mdemo complete\033[0m — working directory %s\n' "$WORK"
-echo "The full create-then-claim flow against the testnet (real RISC0_DEV_MODE=0"
-echo "proving, funded account needed) is scripts/deploy-and-claim.sh; see docs/DEPLOYMENT.md."
+echo "Steps 1-3 ran against the sequencer's executor in-process. To drive the whole"
+echo "lifecycle against a REAL standalone sequencer (it starts its own, no funded"
+echo "account needed), run scripts/e2e-local-sequencer.sh. The create-then-claim flow"
+echo "against the public testnet is scripts/deploy-and-claim.sh; see docs/DEPLOYMENT.md."
