@@ -52,6 +52,32 @@ commitment.
   derivations, shared by the guest and the verifier so there is one source of
   truth for what a claim proves.
 
+## Deployed on the public testnet
+
+Both programs are live on the public LEZ testnet. A deploy tx hash is
+`SHA256(borsh(bytecode))` — content addressed — so the committed binaries under
+`artifacts/programs/` hash to exactly these transactions (reproduce with
+`scripts/verify-onchain-claim.sh` step 1):
+
+| Program | ImageID | Deploy tx |
+|---|---|---|
+| Claim program (LEZ-native, `claim_lez.bin`) | `1f6a0ec0…eb249508` | `5a200887…10c5dcc9` |
+| Claim verifier (SPEL, `claim_verifier.bin`) | `a7b7cf26…6fe7b77d` | `9e0a1929…a52d5580b` |
+
+Three distributions are committed under the verifier and **23 privacy-preserving
+claims** are landed against them; the full `(distribution, claim tx, nullifier)`
+manifest is [`artifacts/e2e/claims.tsv`](artifacts/e2e/claims.tsv). To deploy the
+two programs yourself from the committed bytecode:
+
+```
+wallet deploy-program artifacts/programs/claim_lez.bin
+wallet deploy-program artifacts/programs/claim_verifier.bin
+```
+
+Then `scripts/deploy-and-claim.sh` runs the whole create-then-claim flow against
+the testnet (real proving, funded account needed). The exact env vars, the sync
+step, and how to re-verify are in [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md).
+
 ## Quickstart
 
 From a clean clone, with a Rust toolchain (and, for step 3's deployed-binary
@@ -68,11 +94,25 @@ sequencer's executor), a padded distribution, a recipient opening their row from
 only the bundle and their secret, the compute cost, and finally a live on-chain
 verification of a deployed claim.
 
-- **CLI.** The `airdrop` tool builds a distribution (`demo-distribution`, with
-  `--pad` to hide the recipient count) and claims from only the published bundle
-  and a recipient secret (`claim-from-bundle`).
-- **Basecamp app.** `app/lp-0003-airdrop.lgx` (see [`app/README.md`](app/README.md));
-  the GUI drives the same CLI, so it computes the same commitments as the chain.
+- **CLI, step by step.** Build the tool, then build a padded distribution and
+  claim a row from only the published bundle and a recipient secret:
+
+  ```
+  cargo build --release -p airdrop-cli          # produces target/release/airdrop
+  ID=de00000000000000000000000000000000000000000000000000000000000001
+  airdrop demo-distribution --count 5 --id "$ID" --pad 8 --out ./dist   # bundle padded to 8 rows
+  NSK=$(python3 -c "import json;print(json.load(open('dist/recipients.json'))[2]['nsk_hex'])")
+  airdrop claim-from-bundle --dir ./dist --nsk "$NSK" --out ./claim.args
+  ```
+
+  `claim.args` holds the nullifier, marker seed, and proof witness for that
+  recipient — the same values the on-chain claim consumes. A secret that is not in
+  the set opens no row and the command refuses.
+- **Basecamp app, step by step.** `app/lp-0003-airdrop.lgx` carries a
+  `darwin-arm64` and a `linux-amd64` variant. Install it into Basecamp's plugins
+  directory and launch; the `lp-0003-airdrop` tile drives the same `airdrop` CLI,
+  so it computes the same commitments as the chain. Install commands and the load
+  contract are in [`app/README.md`](app/README.md).
 - **Full create-then-claim on testnet** (real proving, funded account needed):
   `scripts/deploy-and-claim.sh`; see [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md).
 
