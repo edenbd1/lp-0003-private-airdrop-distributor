@@ -137,9 +137,10 @@ Successfully loaded UI module: "lp-0003-airdrop"
 
 The **Private Airdrop Claim** surface renders and is usable. Driven end to end: a
 distribution of 8 recipients generated with the CLI shipped inside the package,
-then **Build claim** produced a nullifier and a marker seed and wrote
-`claim_gui.args` — with the CLI field left empty, so the `dladdr` resolution of
-the packaged `airdrop` binary works. The tile appears only because the manifest
+then **Build claim** produced nullifier `bf28b71b…`, marker seed `5efad061…`, and
+wrote `claim_gui.args` — with the CLI field left empty, so the `dladdr` resolution
+of the packaged `airdrop` binary works, and the args matched the CLI's own output
+for the same recipient byte for byte. The tile appears only because the manifest
 carries `type: "ui"`; `lgx add` leaves it empty, so `package-lgx.py` folds it in
 (see below), and with an empty `type` the module is invisible.
 
