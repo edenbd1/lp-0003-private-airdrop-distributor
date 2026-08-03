@@ -160,11 +160,15 @@ génère une vraie preuve.
 
 > "The demo executed the logic; it did not prove. Proving is the expensive part, so let me generate a real one now, live, with dev mode still off."
 
-**🎬 ACTION** : Lance la génération d'une vraie preuve (compte financé requis ;
-`SIGNER`, `CLAIMANT` et `wallet`/`spel` déjà en place) :
+**🎬 ACTION** : Lance la génération d'une vraie preuve. `spel` doit être sur le
+PATH. `WALLET_BIN` + les home dirs sont nécessaires pour le `sync-private` avant le
+claim (sinon le commitment est périmé et le claim est rejeté). Copier-coller, puis
+remplace juste les deux ids par tes comptes financé/autorisé :
 
 ```bash
 export SIGNER=<ton public id financé> CLAIMANT=<ton private id autorisé>
+export WALLET_BIN=/Users/eden/logos/src/logos-execution-zone/target/release/wallet
+export LEE_WALLET_HOME_DIR=~/.lee/wallet NSSA_WALLET_HOME_DIR=~/.lee/wallet
 ./scripts/prove-one-claim.sh
 ```
 
