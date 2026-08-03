@@ -104,8 +104,13 @@ run_distribution() { # id count dir base step
 
 echo "[2/4] distribution 1"
 run_distribution "b100000000000000000000000000000000000000000000000000000000000001" "$COUNT1" artifacts/e2e/dist1 100 10
-echo "[3/4] distribution 2"
-run_distribution "b200000000000000000000000000000000000000000000000000000000000002" "$COUNT2" artifacts/e2e/dist2 500 25
+# COUNT2=0 runs a single distribution — used by the local-sequencer e2e, where one
+# real proof already exercises every integration point and the public-testnet run
+# is what accumulates the full claim count.
+if [ "$COUNT2" -gt 0 ]; then
+  echo "[3/4] distribution 2"
+  run_distribution "b200000000000000000000000000000000000000000000000000000000000002" "$COUNT2" artifacts/e2e/dist2 500 25
+fi
 
 echo "[4/4] confirm claims landed"
 n=0
@@ -113,7 +118,8 @@ while IFS=$'\t' read -r id tx null; do
   confirmed "$tx" && n=$((n+1))
 done < "$MANIFEST"
 total=$(wc -l < "$MANIFEST" | tr -d ' ')
-echo "  $n / $total claims confirmed on chain, across 2 distributions"
+ndist=$([ "$COUNT2" -gt 0 ] && echo 2 || echo 1)
+echo "  $n / $total claims confirmed on chain, across $ndist distribution(s)"
 echo "  manifest: $MANIFEST (distribution_id, claim_tx, nullifier)"
 echo
 echo "Verify any one with:"
