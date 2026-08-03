@@ -4,8 +4,10 @@
 #
 # Needs curl, python3, jq. Nothing is taken on trust: every identifier is derived
 # from the binaries in this repository or decoded from the bytes the sequencer
-# returns. Reads the chain over getTransaction / getAccount rather than the block
-# explorer, which does not index privacy-preserving transactions.
+# returns. Reads the chain over getTransaction / getAccount, which is the source
+# of truth, rather than the block explorer, whose index is irregular and misses
+# some transactions the sequencer has (including public ones); see
+# docs/DEPLOYMENT.md.
 #
 #   ./scripts/verify-onchain-claim.sh
 #

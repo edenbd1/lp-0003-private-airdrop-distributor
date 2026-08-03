@@ -47,4 +47,4 @@ satisfies it. Codes: ✅ done, 🔧 scripted and reproducible, pending a live ru
 | CI green on the default branch | ✅ `.github/workflows/ci.yml`. |
 | README documents end-to-end usage | ✅ `README.md`, `docs/DEPLOYMENT.md`. |
 | Reproducible end-to-end demo, `RISC0_DEV_MODE=0` | 🔧 `scripts/deploy-and-claim.sh`. |
-| Recorded video demo | 🔧 recorded against the live run. |
+| Recorded video demo | 🔧 not yet recorded; script and PDF ready at `VIDEO_SCRIPT.md`, to show `RISC0_DEV_MODE=0` and real proof generation. |
