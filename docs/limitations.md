@@ -58,17 +58,24 @@ or when. If the requirement is that even the distributor cannot enumerate
 candidates, that is a different primitive (a permissionless, self-registering
 set) and out of scope here.
 
-## The privacy-preserving claim is not shown on the block explorer
+## The block explorer does not show every transaction, and privacy is separate
 
-A claim is a privacy-preserving transaction. The public testnet's indexer does
-not display privacy-preserving transactions, so a claim's explorer page reads
-"not found" and the marker account page can show a stale default owner even
-though `getTransaction` and `getAccount` report the real state over RPC. This is
-a Logos indexer limitation, not a dead transaction. It is also intrinsic to what
-the claim proves: the privacy path is the only one that verifies a proof on
-chain, and it is the one the explorer does not index. Verification therefore
-reads the chain over RPC, which is what `scripts/verify-onchain-claim.sh` does.
-This is reported upstream at `logos-blockchain/lez-explorer-ui#15`.
+Two independent facts, kept apart because conflating them weakens the second:
+
+1. **The indexer's coverage is irregular.** The public testnet's explorer does
+   not hold every transaction the sequencer does. Measured 2026-08-03, two of the
+   project's six on-chain transactions do not display, and one of those two is a
+   *public* `create_distribution`, while the two public distributions before it
+   do display. A hash that cannot exist returns the same "not found" from the
+   explorer, so "not shown" means "no index record", not "dead": `getTransaction`
+   over RPC returns each of the six. This is a Logos indexer limitation unrelated
+   to the design, reported upstream at `logos-blockchain/lez-explorer-ui#15`.
+2. **A privacy claim is unattributable by construction.** Independently of any
+   indexer, a privacy-preserving transaction publishes no `program_id` and no
+   `instruction_data`. Even a perfect explorer could show only that a privacy
+   transaction occurred, never which distribution or address it concerns. That is
+   the point of the scheme, and it is what `scripts/verify-onchain-claim.sh`
+   establishes from the marker PDA, which no explorer can show or forge.
 
 ## Proving cost
 
