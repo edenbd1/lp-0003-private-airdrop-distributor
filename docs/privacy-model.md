@@ -3,6 +3,30 @@
 What each party learns, and what they do not. This is the disclosure the LP-0003
 functionality criterion asks for.
 
+## Threat model
+
+The privacy claims below are stated relative to this threat model. The adversaries
+are the parties in the next section, ordered by strength:
+
+- A **passive on-chain observer** who sees every transaction and account, and who
+  may also know the entire candidate set of eligible addresses.
+- The **other recipients**, who additionally know their own secrets and their own
+  place in the set.
+- The **distributor**, who additionally knows the whole eligible set by
+  construction (it chose it).
+
+All are assumed to follow the protocol except where noted (a malicious distributor
+is considered under "what the integrator can rely on" and in
+[`limitations.md`](limitations.md)). The cryptographic assumptions are SHA-256
+collision/preimage resistance, Risc0 STARK soundness with the LEZ privacy circuit's
+`env::verify` composition, and secrecy of each recipient's `nsk`. **"Unlinkable"
+means precisely:** none of these adversaries can map a claim's on-chain trace (its
+marker PDA) back to which address in the candidate set made it, because the marker
+is seeded by a nullifier `H(prefix ‖ distribution_id ‖ nsk)` that requires the
+secret `nsk`. What is *out of scope*: a recipient who voluntarily reveals their own
+`nsk` or self-identifies, and timing correlation from a recipient who claims the
+instant a distribution opens — both named under Boundaries.
+
 ## The parties
 
 - **Distributor.** Builds the eligibility set and commits its Merkle root on

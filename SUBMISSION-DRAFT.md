@@ -192,6 +192,71 @@ airdrop service can hide the recipient list from the public; it cannot prove to 
 third party that it distributed honestly, and it cannot hide who claimed from
 itself.
 
+## Design topics
+
+Named here so each is findable, with the deeper treatment linked.
+
+### Commitment scheme
+
+Each eligible recipient is a Merkle leaf
+`compute_eligibility_leaf(account_id, allocation, salt) = SHA256(ELIGIBILITY_LEAF_PREFIX ‖ account_id ‖ allocation_le ‖ salt)`,
+where `account_id = derive_account_id(derive_npk(nsk), identifier)`. The
+distributor commits only the Merkle root on chain via `create_distribution`, in a
+PDA seeded by `[distribution_id, root]`. Allocations and the leaf set stay private;
+they can be published encrypted (`crates/airdrop-crypto`) without revealing who is
+eligible.
+
+### Claim-uniqueness mechanism
+
+A secret-bound nullifier
+`compute_claim_nullifier(distribution_id, nsk) = SHA256(CLAIM_NULLIFIER_PREFIX ‖ distribution_id ‖ nsk)`
+seeds a marker PDA `compute_claim_marker(distribution_id, nullifier)`, created with
+`init`. A second claim by the same recipient targets an occupied PDA and is refused
+(`AccountAlreadyInitialized`). The nullifier is deterministic per
+`(distribution, recipient)`, so each recipient claims exactly once, and because it
+commits to `nsk` an observer cannot compute it.
+
+### Trusted setup
+
+**None.** The proof system is Risc0, a STARK, which is transparent: no ceremony,
+no structured reference string, no toxic waste. On-chain verification is the LEZ
+privacy circuit composing the chained `env::verify` over a **Succinct STARK**
+receipt (`verify-onchain-claim.sh` step 3 asserts the receipt is Succinct, not a
+Groth16 wrap and not a dev-mode fake), so no trusted setup enters the trust base.
+
+### LEZ account model compatibility
+
+The scheme is built on LEZ shielded accounts. A recipient's `account_id` derives
+from their secret `nsk` through the nullifier public key (`npk`), and the claim is
+a privacy-preserving transaction that spends the signer's commitment and publishes
+no `program_id` or `instruction_data`. The witness (including `nsk`) travels only
+on the privacy path. See [`docs/privacy-model.md`](docs/privacy-model.md).
+
+### Security assumptions
+
+(a) SHA-256 collision/preimage resistance for the leaf, root, nullifier, and
+marker derivations; (b) Risc0 STARK soundness and the LEZ privacy circuit's
+`env::verify` composition, which the sequencer checks against the node-pinned
+`PRIVACY_PRESERVING_CIRCUIT_ID`; (c) the recipient keeps `nsk` secret; (d) X25519 +
+ChaCha20-Poly1305 for the optional encrypted bundle. Trust boundary: the
+distributor chooses the eligible set (it is trusted for *who is eligible*) but is
+**not** trusted for claim data — the recipient re-checks that the decrypted leaf
+anchors to the committed root before proving, so a malicious distributor cannot
+make a recipient prove a leaf that is not in the set.
+
+### Known limitations and integration
+
+Stated in [`docs/limitations.md`](docs/limitations.md): the encrypted bundle
+reveals cardinality unless padded (and padding hides count from a counter, not a
+length-measurer); the destination is bound in the proof but not in the marker
+seed; `create_distribution` is permissionless, so an integrator must key
+proof-of-claim on `(distribution_id, root)`, not `distribution_id` alone; three
+non-exploitable hardenings are deferred because they would re-key the deployment.
+To integrate: commit a root with `create_distribution`, publish the bundle, and
+have each recipient run `claim-from-bundle` then submit on the privacy path; gate
+downstream on the marker PDA owned by the verifier, checked as in
+`scripts/verify-onchain-claim.sh`.
+
 ## Success Criteria Checklist
 
 ### Functionality
