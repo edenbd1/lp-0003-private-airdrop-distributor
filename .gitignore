@@ -2,12 +2,26 @@
 **/target
 # Keep guest lockfiles (needed for reproducible `cargo risczero build --locked`)
 # and the root workspace lock committed for a deployable project.
+
+# Generated work directories. Globs, not an enumeration: a new .demo-<x> from a
+# future script must not slip through (this is the exact fragility that leaked a
+# secret on a sibling submission). These hold recipients.json and *.args, which
+# carry recipient secrets.
 .work
-app/build
-/.demo/
-/app/darwin-arm64/
-/.demo-prove/
-/.demo-cap/
+/.demo*/
 /.linux-variant/
+app/build
 /app/build-linux/
+/app/darwin-arm64/
 /aqtinstall.log
+
+# deploy-and-claim.sh writes distributions and their fresh run manifest here;
+# artifacts/e2e/ itself is tracked (claims.tsv), so ignore only the run outputs.
+/artifacts/e2e/dist*/
+/artifacts/e2e/deploy-run.tsv
+
+# Belt and suspenders, matched at any depth: these two files carry the recipient
+# secret (nsk) wherever a script writes them, so they must never be committed
+# even if a new work directory is missed above.
+recipients.json
+*.args
