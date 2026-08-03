@@ -15,15 +15,12 @@ on:
   schedule:
     # 04:40 UTC daily. Nothing depends on the hour; it is off-peak for runners.
     - cron: '40 4 * * *'
-  push:
-    branches: [main]
-    paths:
-      - 'scripts/deploy-and-claim.sh'
-      - 'scripts/e2e-local-sequencer.sh'
-      - 'scripts/verify-onchain-claim.sh'
-      - 'artifacts/programs/**'
-      - 'idl/**'
-      - '.github/workflows/e2e-local-sequencer.yml'
+  # Deliberately not on `push`: this job builds the whole logos-execution-zone
+  # workspace and then generates a real proof, so it runs ~an hour. Gating every
+  # push on it would be wrong, and a heavy environment-sensitive job has no place
+  # on the default branch's status checks. The fast per-push coverage
+  # (`ci.yml`, which runs the deployed binary through the sequencer's executor)
+  # gates pushes; this one runs on a schedule and on demand.
 
 concurrency:
   group: e2e-local-sequencer-${{ github.ref }}
@@ -71,9 +68,15 @@ jobs:
           "$HOME/.risc0/bin/rzup" install r0vm 3.0.5
 
       - name: Install spel
+        # The crate is named `spel`, in a directory called `spel-cli`, and it is
+        # not published to crates.io — so this is a clone and a --path install,
+        # pinned to v0.6.0 (the spel release LP-0003's IDL and programs are built
+        # against; `git tag v0.6.0` is commit 0cb7e09). `spel --help` exits 1, so
+        # confirm the binary is on PATH rather than gating on its status.
         run: |
-          cargo install --git https://github.com/logos-co/spel --locked spel-cli || \
-          cargo install spel-cli --locked
+          git clone --depth 1 --branch v0.6.0 https://github.com/logos-co/spel /tmp/spel
+          cargo install --path /tmp/spel/spel-cli --locked
+          command -v spel
 
       - name: Build the standalone sequencer and the wallet
         working-directory: _external/lez
