@@ -131,8 +131,7 @@ curl -s -m 3 -X POST "$RPC" -H 'Content-Type: application/json' \
 
 say "[2/5] a throwaway wallet pointed at it"
 cat > "$WALLET_HOME/wallet_config.json" <<EOF
-{ "sequencer_addr": "$RPC/", "seq_poll_timeout": "30s", "seq_tx_poll_max_blocks": 15,
-  "seq_poll_max_retries": 10, "seq_block_poll_max_amount": 100 }
+{ "sequencers": [{ "sequencer_addr": "$RPC" }], "seq_poll_timeout": "30s", "seq_tx_poll_max_blocks": 15, "seq_poll_max_retries": 10, "seq_block_poll_max_amount": 100, "calibration_limit": 100 }
 EOF
 export LEE_WALLET_HOME_DIR="$WALLET_HOME"
 export NSSA_WALLET_HOME_DIR="$WALLET_HOME"

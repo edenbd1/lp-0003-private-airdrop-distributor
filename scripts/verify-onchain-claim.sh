@@ -123,7 +123,7 @@ echo
 
 echo "[4/5] derive the claim marker PDA from the ImageID and the enforced claim"
 VID=$(image_id "$VERIFIER_BIN")
-[ -n "$VID" ] || VID=a7b7cf261adedbc50b2a5a7db6967325bb01b2e0a1c9d03f1d944d0a6fe7b77d
+[ -n "$VID" ] || VID=f4700341e9e07afd444d1ed800d3d8f15d520d6ccdd5468a29e8ed24dbaba1ac
 # The marker seed commits to the distribution and the nullifier:
 #   seed   = SHA256(CLAIM_MARKER_PREFIX || distribution_id || nullifier)
 #   marker = PDA(verifier, seed)
