@@ -9,7 +9,7 @@ that relates to the block explorer, which is a separate, and irregular, index.
 Network:            Public LEZ testnet
 Sequencer JSON-RPC: https://testnet.lez.logos.co
 Block explorer:     https://explorer.testnet.lez.logos.co
-LEZ version:        v0.2.0
+LEZ version:        v0.2.2 (commit d6e4ae6)
 spel:               v0.6.0
 cargo-risczero:     3.0.5
 ```
@@ -23,32 +23,30 @@ transactions, which is what `scripts/verify-onchain-claim.sh` step 1 checks.
 
 | Program | ImageID | Deploy tx | On the explorer |
 |---|---|---|---|
-| Claim program (LEZ-native, `claim_lez.bin`) | `1f6a0ec0…eb249508` | `5a200887…10c5dcc9` | [displays](https://explorer.testnet.lez.logos.co/transaction/5a200887d9b1a27a206cbf09aac419da122aeb921df56ecfc6e7676210c5dcc9) |
-| Claim verifier (SPEL, `claim_verifier.bin`) | `a7b7cf26…6fe7b77d` | `9e0a1929…a52d5580b` | [displays](https://explorer.testnet.lez.logos.co/transaction/9e0a1929ad5c115e6a131a5d113a2db9ff158e5d5920c4ed6729e82a52d5580b) |
+| Claim program (LEZ-native, `claim_lez.bin`) | `8faaa67c…b48c79c0` | `4a8dab27…8c5fdf59` | [displays](https://explorer.testnet.lez.logos.co/transaction/4a8dab271c2ac4f3b19c38b45e3f05fa4f413a0ac84a7b28030abebc8c5fdf59) |
+| Claim verifier (SPEL, `claim_verifier.bin`) | `51a07a8b…77e8e4ab` | `90f615d4…a22defe7` | [displays](https://explorer.testnet.lez.logos.co/transaction/90f615d4045db10c2e42c44d15bf80f36a7a72e31df51e3bda6c46e4a22defe7) |
 
 ## Distributions and claims
 
-Three distributions are committed on chain under the **current** verifier
-(ImageID `a7b7cf26…`) with `create_distribution`; each commits only its
+Two distributions are committed on chain under the **current** verifier
+(ImageID `51a07a8b…`) with `create_distribution`; each commits only its
 eligibility root, in a PDA whose address is `[distribution_id, root]` derived
 from the verifier's own program id.
 
-| Distribution | id | recipients | create_distribution tx | On the explorer |
-|---|---|---|---|---|
-| 1 | `b1…0001` | 12 | `2fad9747…8a64cc6309` | [displays](https://explorer.testnet.lez.logos.co/transaction/2fad9747f7f39d8935b8a760146abd851e3e3235856a924ef625138a64cc6309) |
-| 2 | `b2…0002` | 10 | `72a32e08…a743ca27e78` | [displays](https://explorer.testnet.lez.logos.co/transaction/72a32e082ae387428226853be81d6aa1f56796da96eb1c2a50e30a743ca27e78) |
-| 3 | `d4…0004` | 6 | `ecf619d7…b8a2ad511` | not indexed (live via RPC) |
+| Distribution | id | recipients | eligibility root |
+|---|---|---|---|
+| 1 | `b1…0001` | 12 | `87f8333b…8f99eaf4` |
+| 2 | `b2…0002` | 11 | `676250fb…63afb678` |
 
-> An earlier pair of distributions (`a1…`, `a2…`) was committed under a previous
-> verifier ImageID (`66ea2b79…`), before the destination binding was added and
-> the verifier redeployed. Because a distribution PDA is derived from the
-> verifier's own program id, those are not claimable under the current binary and
-> are not used here. The distributions above are the ones under the deployed
-> verifier.
+> This deployment is on **LEZ v0.2.2** (commit `d6e4ae6`), the version the public
+> testnet runs after its 2026-08-05 reset and upgrade from v0.2.0. Any earlier
+> v0.2.0 deployment and its claims no longer exist on the reset chain (the privacy
+> circuit id changed, so v0.2.0 proofs no longer verify), which is why these
+> addresses differ from earlier write-ups.
 
-The full list of live claims across these three distributions is committed at
+The full list of live claims across these two distributions is committed at
 [`artifacts/e2e/claims.tsv`](../artifacts/e2e/claims.tsv) as
-`distribution_id, claim_tx, nullifier`: 23 privacy-preserving claims (10 + 7 + 6),
+`distribution_id, claim_tx, nullifier`: 23 privacy-preserving claims (12 + 11),
 each independently verifiable with `verify-onchain-claim.sh`.
 
 A claim is a **privacy-preserving** transaction: its instruction data is not
@@ -59,8 +57,8 @@ proof:
 
 ```
 distribution:        b1…0001, create_distribution 2fad9747f7f39d8935b8a760146abd851e3e3235856a924ef625138a64cc6309
-claim tx (privacy):  5cb5148572e92cced712a1e5af756b9f3e9b886e284c12f21324c6c8e5c0f9a0   (live via RPC; not indexed by the explorer)
-nullifier:           dac661f3cf147e7cc3e88bf340e183702542bdb9c1756bccf21b86cab66ee96d   (a commitment, not a transaction)
+claim tx (privacy):  d9236824835c9f6a986c3bc687c04e2c722ad0984009fb0a936767d3c584e13b   (live via RPC; not indexed by the explorer)
+nullifier:           4920f6fc4e4c50597b45cef083126decfe432a1100815f16bcfb128b0dfcbef8   (a commitment, not a transaction)
 claim marker PDA:    8VCwNfgAUMQbEztyTJvQPB4gr8uqQPik2QX99yWBwvcS  (owned by the verifier)
 ```
 
@@ -70,8 +68,8 @@ transaction hash, so `getTransaction` returns null on it, which is expected.
 Verify the claim from public data over RPC:
 
 ```bash
-CLAIM_TX=5cb5148572e92cced712a1e5af756b9f3e9b886e284c12f21324c6c8e5c0f9a0 \
-NULLIFIER=dac661f3cf147e7cc3e88bf340e183702542bdb9c1756bccf21b86cab66ee96d \
+CLAIM_TX=d9236824835c9f6a986c3bc687c04e2c722ad0984009fb0a936767d3c584e13b \
+NULLIFIER=4920f6fc4e4c50597b45cef083126decfe432a1100815f16bcfb128b0dfcbef8 \
 DISTRIBUTION_ID=b100000000000000000000000000000000000000000000000000000000000001 \
 ./scripts/verify-onchain-claim.sh
 ```
@@ -100,12 +98,12 @@ four display and two do not:
 
 | Transaction | Type | Explorer |
 |---|---|---|
-| `5a200887…` deploy claim_lez | public | displays |
-| `9e0a1929…` deploy verifier | public | displays |
+| `4a8dab27…` deploy claim_lez | public | displays |
+| `90f615d4…` deploy verifier | public | displays |
 | `2fad9747…` create_distribution 1 | public | displays |
 | `72a32e08…` create_distribution 2 | public | displays |
 | `ecf619d7…` create_distribution 3 | **public** | **not indexed** |
-| `5cb51485…` example claim | privacy | not indexed |
+| `d9236824…` example claim | privacy | not indexed |
 
 The control that gives the measurement meaning: a hash that **cannot exist**
 (`dededede…` repeated to 64 chars) returns from the explorer the byte-for-byte

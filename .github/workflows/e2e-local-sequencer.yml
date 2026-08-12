@@ -27,10 +27,10 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  # The revision this was developed and verified against — v0.2.0, the release
+  # The revision this was developed and verified against — v0.2.2, the release
   # the public testnet runs. Floating HEAD would turn an upstream change into a
   # red build here with no change of ours.
-  LEZ_REV: a58fbce
+  LEZ_REV: d6e4ae6
   CARGO_TERM_COLOR: always
 
 jobs:
@@ -67,15 +67,14 @@ jobs:
           echo "$HOME/.risc0/bin" >> "$GITHUB_PATH"
           "$HOME/.risc0/bin/rzup" install r0vm 3.0.5
 
-      - name: Install spel
-        # The crate is named `spel`, in a directory called `spel-cli`, and it is
-        # not published to crates.io — so this is a clone and a --path install,
-        # pinned to v0.6.0 (the spel release LP-0003's IDL and programs are built
-        # against; `git tag v0.6.0` is commit 0cb7e09). `spel --help` exits 1, so
-        # confirm the binary is on PATH rather than gating on its status.
+      - name: Build the vendored spel (ported to LEZ v0.2.2)
+        # spel has no v0.2.2 release, so vendor/spel carries the upstream v0.6.0
+        # sources repinned to lee_core d6e4ae6 and ported to the v0.2.2 API (the
+        # `vpk` private-PDA arg, the async multi-sequencer WalletCore). Install
+        # that; the published v0.6.0 spel does not build against v0.2.2. `spel
+        # --help` exits 1, so confirm the binary is on PATH instead.
         run: |
-          git clone --depth 1 --branch v0.6.0 https://github.com/logos-co/spel /tmp/spel
-          cargo install --path /tmp/spel/spel-cli --locked
+          cargo install --path vendor/spel/spel-cli
           command -v spel
 
       - name: Build the standalone sequencer and the wallet

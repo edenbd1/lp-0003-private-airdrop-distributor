@@ -61,10 +61,10 @@ Both programs are live on the public LEZ testnet. A deploy tx hash is
 
 | Program | ImageID | Deploy tx |
 |---|---|---|
-| Claim program (LEZ-native, `claim_lez.bin`) | `1f6a0ec0…eb249508` | `5a200887…10c5dcc9` |
-| Claim verifier (SPEL, `claim_verifier.bin`) | `a7b7cf26…6fe7b77d` | `9e0a1929…a52d5580b` |
+| Claim program (LEZ-native, `claim_lez.bin`) | `8faaa67c…b48c79c0` | `4a8dab27…8c5fdf59` |
+| Claim verifier (SPEL, `claim_verifier.bin`) | `51a07a8b…77e8e4ab` | `90f615d4…a22defe7` |
 
-Three distributions are committed under the verifier and **23 privacy-preserving
+Two distributions are committed under the verifier and **23 privacy-preserving
 claims** are landed against them; the full `(distribution, claim tx, nullifier)`
 manifest is [`artifacts/e2e/claims.tsv`](artifacts/e2e/claims.tsv). To deploy the
 two programs yourself from the committed bytecode:
@@ -179,7 +179,7 @@ Deployment record and reproduction steps are in
 ## A note on the LEZ source citations
 
 Paths like `lee/state_machine/src/program.rs:73-77` resolve against
-`logos-execution-zone` at tag `v0.2.0`, the release the public testnet runs and
+`logos-execution-zone` at commit `d6e4ae6` (tag `v0.2.2`), the release the public testnet runs and
 the one this project builds against.
 
 ## License

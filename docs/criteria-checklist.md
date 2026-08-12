@@ -12,8 +12,8 @@ satisfies it. Codes: ✅ done, 🔧 scripted and reproducible, pending a live ru
 | No double-claim (nullifiers or equivalent) | ✅ marker PDA seeded by `compute_claim_marker(distribution_id, nullifier)`; `init` fails on the second claim. Tested: `airdrop-core` and `claim-verifier-tests`. |
 | On-chain observer cannot link a claim to an address | ✅ nullifier is secret-bound (`compute_claim_nullifier(distribution_id, nsk)`); see `docs/privacy-model.md`. Tested: `the_nullifier_is_not_computable_from_public_data`. |
 | Full privacy model documented | ✅ `docs/privacy-model.md`. |
-| Reference integration: a working private airdrop/allowlist demo on testnet | ✅ programs deployed (`docs/DEPLOYMENT.md`); `scripts/deploy-and-claim.sh` runs the full create-then-claim flow, and its result is the 23 live claims across 3 distributions in [`artifacts/e2e/claims.tsv`](../artifacts/e2e/claims.tsv). |
-| ≥2 distributions deployed, ≥20 unique claims total | ✅ **3 distributions, 23 live claims** (10 + 7 + 6) committed on chain under the current verifier. Each is a privacy-preserving proof and is listed with its tx and nullifier in [`artifacts/e2e/claims.tsv`](../artifacts/e2e/claims.tsv), independently verifiable with `scripts/verify-onchain-claim.sh`. |
+| Reference integration: a working private airdrop/allowlist demo on testnet | ✅ programs deployed (`docs/DEPLOYMENT.md`); `scripts/deploy-and-claim.sh` runs the full create-then-claim flow, and its result is the 23 live claims across 2 distributions in [`artifacts/e2e/claims.tsv`](../artifacts/e2e/claims.tsv). |
+| ≥2 distributions deployed, ≥20 unique claims total | ✅ **2 distributions, 23 live claims** (12 + 11) committed on chain under the current verifier. Each is a privacy-preserving proof and is listed with its tx and nullifier in [`artifacts/e2e/claims.tsv`](../artifacts/e2e/claims.tsv), independently verifiable with `scripts/verify-onchain-claim.sh`. |
 | Full documentation and clean public repository | ✅ this repo, `README.md` and `docs/`. |
 
 ## Usability
