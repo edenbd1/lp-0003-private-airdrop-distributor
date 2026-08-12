@@ -29,7 +29,10 @@ RPC="${SEQUENCER_URL:-https://testnet.lez.logos.co}"
 COUNT1="${COUNT1:-12}"
 COUNT2="${COUNT2:-10}"
 : "${SIGNER:?set SIGNER to a funded Public account id}"
-: "${CLAIMANT:?set CLAIMANT to an authorized Private account id}"
+# The signer's wallet home (holds the funded SIGNER). Each claim uses its own
+# throwaway home instead (see the claim loop), so remember this one to restore
+# before every create_distribution.
+SIGNER_HOME="${LEE_WALLET_HOME_DIR:-$HOME/.lee/wallet}"
 
 CLI=target/release/airdrop
 cargo build --release -p airdrop-cli --bin airdrop >/dev/null 2>&1
@@ -77,6 +80,9 @@ run_distribution() { # id count dir base step
   local root
   root=$(python3 -c "import json;print(json.load(open('$dir/distribution.json'))['root_hex'])")
   echo "  root $root ; committing on chain"
+  # create_distribution is signed by the funded SIGNER, so restore its home
+  # (the previous distribution's claims left a throwaway home exported).
+  export LEE_WALLET_HOME_DIR="$SIGNER_HOME" NSSA_WALLET_HOME_DIR="$SIGNER_HOME"
   "$SPEL_BIN" --idl "$IDL" --program "$VERIFIER" \
     -- create_distribution --authority "Public/$SIGNER" \
     --distribution-id "$id" --eligibility-root "$root" >/dev/null 2>&1 || true
@@ -91,14 +97,25 @@ run_distribution() { # id count dir base step
     "$CLI" claim-from-bundle --dir "$dir" --nsk "$nsk" --out "$args" >/dev/null 2>&1 \
       || { echo "  SKIP $id $i (row did not open)"; continue; }
     local flat; flat=$(tr '\n' ' ' < "$args")
-    # A privacy transaction spends the signer's commitment, so the claimant's
-    # private account must be re-synced before each claim or its membership proof
-    # is stale and the sequencer drops the transaction.
+    # A throwaway claimant per claim. On LEZ v0.2.2 a private account that has
+    # already spent a commitment carries extra account identities into the next
+    # privacy transaction, and the circuit rejects the count ("Invalid
+    # account_identities length"). A fresh private account each claim keeps the
+    # identity set at exactly what the claim statement declares. The recipient's
+    # eligibility secret (nsk) is in the witness; the claimant is only the
+    # throwaway signer of the privacy transaction.
+    local cw; cw=$(mktemp -d)
+    printf '{ "sequencers": [{ "sequencer_addr": "%s" }], "seq_poll_timeout": "30s", "seq_tx_poll_max_blocks": 15, "seq_poll_max_retries": 10, "seq_block_poll_max_amount": 100, "calibration_limit": 100 }\n' "$RPC" > "$cw/wallet_config.json"
+    export LEE_WALLET_HOME_DIR="$cw" NSSA_WALLET_HOME_DIR="$cw"
+    "$WALLET_BIN" account new private </dev/null >/dev/null 2>&1
+    local claimant; claimant=$("$WALLET_BIN" account list </dev/null 2>/dev/null \
+      | grep -oE 'Private/[1-9A-HJ-NP-Za-km-z]+' | sed 's|Private/||' | tail -n1)
     "$WALLET_BIN" account sync-private >/dev/null 2>&1 || true
-    echo "  claim $i of dist ${id:0:8} (from encrypted bundle) ..."
+    echo "  claim $i of dist ${id:0:8} (fresh claimant) ..."
     local out; out=$(eval "$SPEL_BIN" --idl "$IDL" --program "$VERIFIER" \
       --bin-claimlez "$CLAIM_LEZ" \
-      -- claim --claimant "Private/$CLAIMANT" $flat 2>&1)
+      -- claim --claimant "Private/$claimant" $flat 2>&1)
+    rm -rf "$cw"
     local tx; tx=$(echo "$out" | grep -o 'tx_hash: [0-9a-f]\{64\}' | head -1 | cut -d' ' -f2)
     local null; null=$(grep -o "'[0-9a-f]\{64\}'" "$args" | sed -n '3p' | tr -d "'")
     [ -n "$tx" ] && printf '%s\t%s\t%s\n' "$id" "$tx" "$null" >> "$MANIFEST"
