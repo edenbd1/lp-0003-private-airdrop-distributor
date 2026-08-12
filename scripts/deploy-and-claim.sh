@@ -39,9 +39,12 @@ VERIFIER=artifacts/programs/claim_verifier.bin
 CLAIM_LEZ=artifacts/programs/claim_lez.bin
 
 confirmed() {
+  # LEZ v0.2.2 getTransaction returns Option<(LeeTransaction, BlockId)>: a JSON
+  # array `"result":[<tx>,<block>]` for a found tx, `"result":null` otherwise
+  # (v0.2.0 returned the tx as a bare string `"result":"..."`).
   curl -s -m 20 -X POST "$RPC" -H 'Content-Type: application/json' \
     -d "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"getTransaction\",\"params\":[\"$1\"]}" \
-    | grep -q '"result":"'
+    | grep -qE '"result":\['
 }
 wait_tx() { # hash label
   for _ in $(seq 1 40); do confirmed "$1" && { echo "  confirmed $2 $1"; return 0; }; sleep 6; done
