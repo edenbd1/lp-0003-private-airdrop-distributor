@@ -51,7 +51,7 @@ const E_MARKER_SEED_MISMATCH: u32 = 4004;
 const E_ALLOCATION_MISMATCH: u32 = 4006;
 
 /// ProgramId of the LEZ-native claim program (`claim_lez.bin`,
-/// ImageID `1f6a0ec0036ec2c0c23dcc8380aeb9be26128608db3bb6f5b10d3f30eb249508`).
+/// ImageID `8faaa67c4df39390116245cde12b5325a5c1b3347dd332092a06d8feb48c79c0`).
 /// The deployment is content-addressed, so this pins exactly the audited binary.
 ///
 /// Verify with:

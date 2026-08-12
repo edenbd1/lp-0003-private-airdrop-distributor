@@ -8,7 +8,7 @@ same inputs, same 32M session limit, same executor
 performs, measured rather than reported by the node.
 
 Measured against the deployed `claim_verifier.bin`
-(ImageID `a7b7cf26…6fe7b77d`):
+(ImageID `51a07a8b…77e8e4ab`):
 
 | Metric | `claim` |
 |---|---|

@@ -23,7 +23,7 @@ PDA address — `create_distribution` initialises the account seeded by
 `[distribution_id, root]`, so an invented root resolves to an account nobody ever
 created and the claim is rejected.
 
-Everything is live on the public LEZ testnet: two programs deployed, three
+Everything is live on the public LEZ testnet: two programs deployed, two
 distributions committed, and **23 privacy-preserving claims** landed and
 independently verifiable. From a clean clone, `./scripts/verify-onchain-claim.sh`
 re-checks any one of them over JSON-RPC.
@@ -45,17 +45,17 @@ what `scripts/verify-onchain-claim.sh` step 1 checks.
 
 | Program | ImageID | Deploy tx |
 |---|---|---|
-| Claim program (LEZ-native) | `1f6a0ec0…eb249508` | `5a200887d9b1a27a206cbf09aac419da122aeb921df56ecfc6e7676210c5dcc9` |
-| Claim verifier (SPEL) | `a7b7cf26…6fe7b77d` | `9e0a1929ad5c115e6a131a5d113a2db9ff158e5d5920c4ed6729e82a52d5580b` |
+| Claim program (LEZ-native) | `8faaa67c…b48c79c0` | `4a8dab271c2ac4f3b19c38b45e3f05fa4f413a0ac84a7b28030abebc8c5fdf59` |
+| Claim verifier (SPEL) | `51a07a8b…77e8e4ab` | `90f615d4045db10c2e42c44d15bf80f36a7a72e31df51e3bda6c46e4a22defe7` |
 
-Three distributions are committed under the current verifier, and 23 claims are
-landed against them (10 + 7 + 6):
+Two distributions are committed under the current verifier, and 23 claims are
+landed against them (12 + 11). A distribution's PDA is derived from
+`[distribution_id, eligibility_root]`, so the root is its on-chain identity:
 
-| Distribution | id | recipients | create_distribution tx |
+| Distribution | id | recipients | eligibility root |
 |---|---|---|---|
-| 1 | `b1…0001` | 12 | `2fad9747f7f39d8935b8a760146abd851e3e3235856a924ef625138a64cc6309` |
-| 2 | `b2…0002` | 10 | `72a32e082ae387428226853be81d6aa1f56796da96eb1c2a50e30a743ca27e78` |
-| 3 | `d4…0004` | 6 | `ecf619d7c0e8aebd74e6f8318a9badb1dfe6b18a7e48dfd6390e4c4b8a2ad511` |
+| 1 | `b1…0001` | 12 | `87f8333b…8f99eaf4` |
+| 2 | `b2…0002` | 11 | `676250fb…63afb678` |
 
 The full list of (distribution, claim tx, nullifier) is committed at
 [`artifacts/e2e/claims.tsv`](artifacts/e2e/claims.tsv). A claim is a
@@ -67,8 +67,8 @@ so the RPC is the source of truth. Verify any claim from public data over
 JSON-RPC:
 
 ```bash
-CLAIM_TX=5cb5148572e92cced712a1e5af756b9f3e9b886e284c12f21324c6c8e5c0f9a0 \
-NULLIFIER=dac661f3cf147e7cc3e88bf340e183702542bdb9c1756bccf21b86cab66ee96d \
+CLAIM_TX=d9236824835c9f6a986c3bc687c04e2c722ad0984009fb0a936767d3c584e13b \
+NULLIFIER=4920f6fc4e4c50597b45cef083126decfe432a1100815f16bcfb128b0dfcbef8 \
 DISTRIBUTION_ID=b100000000000000000000000000000000000000000000000000000000000001 \
 ./scripts/verify-onchain-claim.sh
 ```
@@ -77,10 +77,13 @@ which confirms the transaction is `PrivacyPreserving`, its receipt is a `Succinc
 STARK the sequencer verified, and the claim marker PDA is owned by the verifier:
 the membership proof was verified on chain as a precondition of acceptance.
 
-> An earlier pair of distributions (`a1…`, `a2…`) was committed under a previous
-> verifier ImageID before the destination binding was added and the verifier
-> redeployed. Because a distribution PDA is derived from the verifier's program
-> id, those are not claimable under the current binary and are not used here.
+> This deployment targets **LEZ v0.2.2** (commit `d6e4ae6`), the version the
+> public testnet runs after its 2026-08-05 reset and upgrade from v0.2.0. The two
+> programs were rebuilt against v0.2.2 — the privacy circuit id changed, so
+> v0.2.0 proofs no longer verify and its deployment no longer exists on the reset
+> chain — which is why these ImageIDs differ from any earlier v0.2.0 write-up. The
+> SPEL framework has no v0.2.2 release yet, so `vendor/spel` carries the upstream
+> v0.6.0 sources repinned and ported to v0.2.2 (see `vendor/spel`).
 
 ## Approach
 
@@ -279,8 +282,8 @@ downstream on the marker PDA owned by the verifier, checked as in
 - [x] **Reference integration on testnet.** `scripts/deploy-and-claim.sh` runs the
       full create-then-claim flow; its result is the live claims in
       [`artifacts/e2e/claims.tsv`](artifacts/e2e/claims.tsv).
-- [x] **≥2 distributions, ≥20 claims.** 3 distributions, 23 live claims (10 + 7 +
-      6), each verifiable with `scripts/verify-onchain-claim.sh`.
+- [x] **≥2 distributions, ≥20 claims.** 2 distributions, 23 live claims (12 +
+      11), each verifiable with `scripts/verify-onchain-claim.sh`.
 - [x] **Full documentation and a clean public repository.**
 
 ### Usability
