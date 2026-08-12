@@ -87,7 +87,8 @@ if [ -z "$CLAIM_TX" ]; then
 fi
 
 echo "[2/5] the claim transaction is PrivacyPreserving, not Public"
-TX_B64=$(rpc getTransaction "[\"$CLAIM_TX\"]" | jq -r '.result // empty')
+# v0.2.2 getTransaction returns [transaction, block_id]; the transaction is [0].
+TX_B64=$(rpc getTransaction "[\"$CLAIM_TX\"]" | jq -r '.result[0] // empty')
 if [ -z "$TX_B64" ]; then
   bad "claim transaction not found  $CLAIM_TX"
 else
@@ -123,7 +124,7 @@ echo
 
 echo "[4/5] derive the claim marker PDA from the ImageID and the enforced claim"
 VID=$(image_id "$VERIFIER_BIN")
-[ -n "$VID" ] || VID=f4700341e9e07afd444d1ed800d3d8f15d520d6ccdd5468a29e8ed24dbaba1ac
+[ -n "$VID" ] || VID=51a07a8bb039a079b549b4c0cd71f22b413afb9db04f2ae28c3c25ee77e8e4ab
 # The marker seed commits to the distribution and the nullifier:
 #   seed   = SHA256(CLAIM_MARKER_PREFIX || distribution_id || nullifier)
 #   marker = PDA(verifier, seed)

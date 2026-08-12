@@ -57,7 +57,7 @@ const E_ALLOCATION_MISMATCH: u32 = 4006;
 /// Verify with:
 ///   spel program-id artifacts/programs/claim_lez.bin
 pub const CLAIM_LEZ_PROGRAM_ID: nssa_core::program::ProgramId = [
-    3222170143, 3233967619, 2211200450, 3199839872, 143004198, 4122360795, 809438641, 143992043,
+    2091297423, 2425615181, 3443876369, 626207713, 884195749, 154325885, 4275570218, 3229191348,
 ];
 
 #[lez_program]
