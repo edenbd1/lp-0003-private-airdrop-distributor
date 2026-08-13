@@ -62,14 +62,13 @@ set) and out of scope here.
 
 Two independent facts, kept apart because conflating them weakens the second:
 
-1. **The indexer's coverage is irregular.** The public testnet's explorer does
-   not hold every transaction the sequencer does. Measured 2026-08-03, two of the
-   project's six on-chain transactions do not display, and one of those two is a
-   *public* `create_distribution`, while the two public distributions before it
-   do display. A hash that cannot exist returns the same "not found" from the
-   explorer, so "not shown" means "no index record", not "dead": `getTransaction`
-   over RPC returns each of the six. This is a Logos indexer limitation unrelated
-   to the design, reported upstream at `logos-blockchain/lez-explorer-ui#15`.
+1. **The indexer's coverage is incomplete.** The public testnet's explorer does
+   not hold every transaction the sequencer does, so some of this project's
+   on-chain transactions display there and some do not. "Not shown" means "no
+   index record", not "dead": `getTransaction` over RPC returns each live
+   transaction (non-null), and `null` for a hash that cannot exist, so the RPC is
+   the source of truth. This is a Logos indexer limitation unrelated to the
+   design, reported upstream at `logos-blockchain/lez-explorer-ui#15`.
 2. **A privacy claim is unattributable by construction.** Independently of any
    indexer, a privacy-preserving transaction publishes no `program_id` and no
    `instruction_data`. Even a perfect explorer could show only that a privacy

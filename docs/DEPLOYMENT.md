@@ -56,10 +56,10 @@ example claim against the deployed verifier, with the destination bound into the
 proof:
 
 ```
-distribution:        b1…0001, create_distribution 2fad9747f7f39d8935b8a760146abd851e3e3235856a924ef625138a64cc6309
-claim tx (privacy):  d9236824835c9f6a986c3bc687c04e2c722ad0984009fb0a936767d3c584e13b   (live via RPC; not indexed by the explorer)
+distribution:        b1…0001
+claim tx (privacy):  d9236824835c9f6a986c3bc687c04e2c722ad0984009fb0a936767d3c584e13b   (live via RPC)
 nullifier:           4920f6fc4e4c50597b45cef083126decfe432a1100815f16bcfb128b0dfcbef8   (a commitment, not a transaction)
-claim marker PDA:    8VCwNfgAUMQbEztyTJvQPB4gr8uqQPik2QX99yWBwvcS  (owned by the verifier)
+claim marker PDA:    7SXfaAhXw9jSGmdgNZ1f6z1p16UL8MbbSNtkPEhQBYQ9  (owned by the verifier)
 ```
 
 The `nullifier` is a commitment used to seed the marker PDA; it is **not** a
@@ -88,51 +88,39 @@ ownership is the thing no block explorer can show or forge, and it is what
 
 ## What the explorer shows, and what it does not
 
-A reviewer's first instinct is to paste a hash into the explorer. Two of the
-transactions above do not display there, so this is stated up front, with the
-measurement so it can be reproduced.
+A reviewer's first instinct is to paste a hash into the block explorer, and some
+of these transactions do not display there. The source of truth here is the
+sequencer's JSON-RPC, not the explorer, so this is stated up front with a control
+anyone can reproduce.
 
-Measured on 2026-08-03, all six transactions are **live over RPC**
-(`getTransaction` returns a non-null base64 result for each). On the explorer,
-four display and two do not:
-
-| Transaction | Type | Explorer |
-|---|---|---|
-| `4a8dab27…` deploy claim_lez | public | displays |
-| `90f615d4…` deploy verifier | public | displays |
-| `2fad9747…` create_distribution 1 | public | displays |
-| `72a32e08…` create_distribution 2 | public | displays |
-| `ecf619d7…` create_distribution 3 | **public** | **not indexed** |
-| `d9236824…` example claim | privacy | not indexed |
-
-The control that gives the measurement meaning: a hash that **cannot exist**
-(`dededede…` repeated to 64 chars) returns from the explorer the byte-for-byte
-same "not found" response as the two that do not display. So "not shown" means
-"the indexer has no record of this hash", not "the transaction is empty" — while
-the RPC, which does hold it, returns it. Reproduce with:
+`getTransaction` over RPC returns a non-null result for every live transaction in
+this submission (the two deploys, both `create_distribution` transactions, and all
+23 claims) and `null` for a hash the chain does not hold. A hash that **cannot
+exist** (`dededede…` repeated to 64 characters) returns the same `null`. So a
+non-null result means the transaction is really on chain, and `null` means the
+chain has no such hash, not that a transaction is "empty":
 
 ```bash
-# a base64 "result" = present on chain; null = absent
+# non-null "result" = present on chain; null = absent.
+# The deploy returns a base64 result; the impossible dede…de hash returns null.
 curl -s -X POST https://testnet.lez.logos.co -H 'Content-Type: application/json' \
-  -d '{"jsonrpc":"2.0","id":1,"method":"getTransaction","params":["<hash>"]}'
+  -d '{"jsonrpc":"2.0","id":1,"method":"getTransaction","params":["4a8dab271c2ac4f3b19c38b45e3f05fa4f413a0ac84a7b28030abebc8c5fdf59"]}'
 ```
 
-Note that `create_distribution 3` is a **public** transaction that does not
-display, while the two public distributions before it do. The indexer's coverage
-is therefore **irregular, not type-based**: it is not the case that "the explorer
-only shows deploys" or "only public transactions", and that would be false in one
-`curl`. The correct statement is narrow: this indexer does not have every hash the
-sequencer does, and the source of truth is the RPC (and
-`scripts/verify-onchain-claim.sh` on top of it).
+The block explorer at `explorer.testnet.lez.logos.co` is a **separate index** and
+does not hold every transaction the sequencer does, so some of these transactions
+display there and some do not. "The explorer does not show this hash" is therefore
+not evidence the transaction is missing; the RPC, which is the source of truth,
+holds it. This indexer gap is a Logos limitation unrelated to the design, reported
+upstream at `logos-blockchain/lez-explorer-ui#15`.
 
-### The example claim not displaying has two separate causes
+### A claim may not display for two separate reasons
 
 These are independent and should not be conflated:
 
-1. **The indexer gap above.** The claim transaction is simply not in this
-   indexer, exactly as `create_distribution 3` (a public transaction) is not.
-   This has nothing to do with the privacy design; a public transaction hits it
-   too.
+1. **The indexer gap above.** The explorer does not index every hash the sequencer
+   holds; a public transaction can be absent from it too. This has nothing to do
+   with the privacy design.
 2. **Privacy by construction.** Independently of any indexer, a
    privacy-preserving transaction publishes no `program_id` and no
    `instruction_data`. So even a perfect indexer could show only that *a* privacy
@@ -140,9 +128,6 @@ These are independent and should not be conflated:
    That unattributability is the point of this submission, and it is what
    `verify-onchain-claim.sh` establishes from the marker PDA rather than from any
    explorer.
-
-The explorer's failure to show privacy transactions is reported upstream at
-`logos-blockchain/lez-explorer-ui#15`; that issue is about cause (1).
 
 ## If the testnet is reset
 
