@@ -210,48 +210,27 @@ s'afficher jusqu'à `VERIFIED`.
 
 ---
 
-# SCÈNE 4 — L'app Basecamp (5:15 – 6:15)
+# SCÈNE 4 — Le paquet Basecamp, vérifié (~1 min)
 
-**🎬 ACTION** : Passe sur Basecamp (déjà ouvert, la tuile LP-0003 dans la
-sidebar). Clique la tuile **lp-0003-airdrop**.
+**🎬 ACTION** : Tape :
 
-**💬 SAY** :
-
-> "The same primitive, in a G-U-I. This is the L-P zero-zero-zero-three app, loaded in Logos Basecamp two point two — the real app, from the package committed in the repo, not a mockup."
-
-**🎬 ACTION** : La surface **Private Airdrop Claim** s'affiche. Pointe le champ
-distribution sur un dossier de distribution démo, choisis un destinataire, clique
-**Build claim**.
+```bash
+python3 scripts/package-lgx.py --verify app/lp-0003-airdrop.lgx
+```
 
 **💬 SAY** :
 
-> "I point it at a distribution, pick a recipient, and build the claim. It prints a nullifier, a marker seed, and writes the claim args. And notice the C-L-I path field is empty: the app resolves the airdrop binary shipped inside the package itself, with dladdr, so a freshly installed package just works."
+> "The Basecamp deliverable is a package, so let me check it rather than assert it. This recomputes every hash in the manifest from the archive's own contents, for both variants — darwin arm64 and linux amd64 — because the reviewer runs Linux and a package carrying only one platform is one they cannot open."
+
+**🎬 ACTION** : Puis, pour montrer ce que l'app exécute réellement :
+
+```bash
+tar xzf app/lp-0003-airdrop.lgx -C /tmp/pkg && /tmp/pkg/variants/darwin-arm64/airdrop --help
+```
 
 **💬 SAY** :
 
-> "The G-U-I and the chain compute the same commitments from the same code, because the app shells out to that same airdrop C-L-I. There is no second implementation to drift."
-
----
-
-# SCÈNE 5 — L'audit (6:15 – 7:15)
-
-**🎬 ACTION** : Reviens sur le terminal
-
-**💬 SAY** :
-
-> "One more thing, because I think it matters more than a feature list."
-
-**💬 SAY** :
-
-> "After the first version was deployed, I ran an adversarial audit — reviewers and tests whose job is to *break* the code, not confirm it. It found a robustness gap in my own bundle-opening code."
-
-**💬 SAY** :
-
-> "Opening a row used the raw Diffie-Hellman shared secret. A crafted low-order key would collapse that secret to the same value for every recipient, so one row injected into the open bundle would open for everyone and hand honest recipients garbage. It could never steal funds — the on-chain check rejects any forged claim — but it could grief a distribution."
-
-**💬 SAY** :
-
-> "The fix rejects those non-contributory keys, and the recipient now keeps the first row that actually anchors to the committed root, not just the first that decrypts — so junk rows are skipped. Both halves are pinned by new tests, including one that runs through the deployed binary. I wrote the finding into the git history rather than quietly patching it."
+> "And this is the binary the package ships. The Basecamp module is a thin Qt surface that shells out to exactly this C-L-I — so what the app computes is what you are watching compute here. There is no second implementation to drift, and nothing the G-U-I can claim that this command cannot show."
 
 ---
 
@@ -327,19 +306,24 @@ distribution sur un dossier de distribution démo, choisis un destinataire, cliq
 
 # ⏱️ Timing récap
 
-| Scène | De | À | Durée |
-|---|---|---|---|
-| 1. Intro | 0:00 | 0:45 | 45s |
-| 2. demo.sh | 0:45 | 3:15 | 2m30 |
-| 3. Preuve en direct | 3:15 | 5:15 | 2m00 (proving accéléré) |
-| 4. L'app Basecamp | 5:15 | 6:15 | 1m00 |
-| 5. L'audit | 6:15 | 7:15 | 1m00 |
-| 6. Closing | 7:15 | 8:00 | 45s |
-| **Total** | | | **~8 min** |
+| Scène | Durée |
+|---|---|
+| 1. Intro | 45s |
+| 2. demo.sh | 2m30 |
+| 3. Preuve en direct | variable — le proving gouverne |
+| 4. Le paquet Basecamp | 1m00 |
+| 6. Closing | 45s |
+| **Total** | **~7 min hors proving** |
 
-Entre 5 et 8 minutes c'est bon. Le brief demande une narration qui explique
-l'architecture et les décisions — pas un screencast muet. La scène 3 montre une
-vraie génération de preuve avec `RISC0_DEV_MODE=0`, et la scène 4 est ce qui te
-distingue : elle montre que tu audites ton propre travail.
+> **Les horodatages absolus ont été retirés.** La scène 3 dure ce que dure la
+> preuve, et cela dépend de la machine : sur LP-0002, la même opération est
+> passée de 150 s à 437 s en changeant de version de LEZ, et à 935 s avec une
+> autre preuve tournant en parallèle. Toutes les scènes suivantes glissent
+> d'autant. Lance `pgrep -fl r0vm` avant de filmer — s'il sort quelque chose,
+> attends.
+
+Le brief demande une narration qui explique l'architecture et les décisions, pas
+un screencast muet. La scène 3 montre une vraie génération de preuve avec
+`RISC0_DEV_MODE=0` ; la scène 4 vérifie le paquet Basecamp au lieu de l'affirmer.
 
 **Tu peux y aller. 🎬**
