@@ -166,10 +166,28 @@ PATH. `WALLET_BIN` + les home dirs sont nécessaires pour le `sync-private` avan
 claim (sinon le commitment est périmé et le claim est rejeté). Copier-coller, puis
 remplace juste les deux ids par tes comptes financé/autorisé :
 
+Le testnet public tourne **LEZ v0.2.2**, donc on utilise le wallet v0.2.2 et le
+spel **vendoré** (`vendor/spel`, porté à v0.2.2). Le claim signe avec un compte
+privé jetable créé à la volée — pas de `CLAIMANT` à fournir. Prépare **avant de
+filmer** (hors caméra) un compte public financé via le faucet :
+
 ```bash
-export SIGNER=<ton public id financé> CLAIMANT=<ton private id autorisé>
-export WALLET_BIN=/Users/eden/logos/src/logos-execution-zone/target/release/wallet
-export LEE_WALLET_HOME_DIR=~/.lee/wallet NSSA_WALLET_HOME_DIR=~/.lee/wallet
+export PATH="/Users/eden/data/ns.com/lp-0003/vendor/spel/target/release:$HOME/.cargo/bin:$HOME/.risc0/bin:$PATH"
+export WALLET_BIN=/Users/eden/logos/src/lez-v0.2.2/target/release/wallet
+export SPEL_BIN=/Users/eden/data/ns.com/lp-0003/vendor/spel/target/release/spel
+export DYLD_FALLBACK_FRAMEWORK_PATH=/Library/Developer/CommandLineTools/Library/Frameworks
+export LEE_WALLET_HOME_DIR=~/.lez-v022-wallet NSSA_WALLET_HOME_DIR=~/.lez-v022-wallet
+mkdir -p ~/.lez-v022-wallet
+echo '{ "sequencers": [{ "sequencer_addr": "https://testnet.lez.logos.co" }], "seq_poll_timeout": "30s", "seq_tx_poll_max_blocks": 15, "seq_poll_max_retries": 10, "seq_block_poll_max_amount": 100, "calibration_limit": 100 }' > ~/.lez-v022-wallet/wallet_config.json
+"$WALLET_BIN" account new public                       # note l'account_id imprimé
+export SIGNER=<l_account_id_imprimé>
+"$WALLET_BIN" auth-transfer init --account-id "Public/$SIGNER"
+"$WALLET_BIN" pinata claim --to "Public/$SIGNER"       # +150 LEZ ; répète 1-2x si besoin
+```
+
+Puis, caméra qui tourne, tu ne tapes que :
+
+```bash
 ./scripts/prove-one-claim.sh
 ```
 

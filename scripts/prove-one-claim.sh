@@ -5,7 +5,8 @@
 # execute, they do not prove), while this script produces a real STARK on the
 # privacy path. It is the narrated video's proof-generation scene.
 #
-#   SIGNER=<funded public id> CLAIMANT=<authorized private id> ./scripts/prove-one-claim.sh
+#   SIGNER=<funded public id> ./scripts/prove-one-claim.sh
+# Needs the v0.2.2 wallet (WALLET_BIN) and the vendored spel (SPEL_BIN) on hand.
 #
 # Needs `spel` and `wallet` on PATH and a funded SIGNER. Each run uses a fresh,
 # random distribution id, so it never collides with a previous run.
@@ -16,9 +17,12 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"; cd "$ROOT"
 export RISC0_DEV_MODE=0
 
 : "${SIGNER:?set SIGNER to a funded public account id}"
-: "${CLAIMANT:?set CLAIMANT to an authorized private account id}"
 RPC="${SEQUENCER_URL:-https://testnet.lez.logos.co}"
 WALLET="${WALLET_BIN:-wallet}"
+SPEL="${SPEL_BIN:-spel}"
+# The funded SIGNER's wallet home. The claim signs with its own throwaway home
+# (step 4), so remember this one for create_distribution.
+SIGNER_HOME="${LEE_WALLET_HOME_DIR:-$HOME/.lee/wallet}"
 CLI=target/release/airdrop
 IDL=idl/claim_verifier.idl.json
 VERIFIER=artifacts/programs/claim_verifier.bin
@@ -27,7 +31,8 @@ DIR=.demo-prove
 rm -rf "$DIR"
 
 confirmed() { curl -s -m 25 -X POST "$RPC" -H 'Content-Type: application/json' \
-  -d "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"getTransaction\",\"params\":[\"$1\"]}" | grep -q '"result":"'; }
+  -d "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"getTransaction\",\"params\":[\"$1\"]}" \
+  | grep -qE '"result":\['; }  # v0.2.2: getTransaction returns [tx, block]
 rule() { printf '\n\033[1m== %s\033[0m\n' "$1"; }
 
 # A fresh distribution id each run, so re-running never hits a double-claim.
@@ -46,7 +51,7 @@ echo "root         ${ROOT_HEX:0:16}..."
 rule "2. commit the eligibility root on chain"
 CDTX=""
 for attempt in 1 2 3; do
-  CD=$(spel --idl "$IDL" --program "$VERIFIER" -- create_distribution --authority "Public/$SIGNER" \
+  CD=$($SPEL --idl "$IDL" --program "$VERIFIER" -- create_distribution --authority "Public/$SIGNER" \
     --distribution-id "$ID" --eligibility-root "$ROOT_HEX" 2>&1) || true
   CDTX=$(echo "$CD" | grep -o 'tx_hash: [0-9a-f]\{64\}' | head -1 | cut -d' ' -f2)
   [ -n "$CDTX" ] && break
@@ -63,11 +68,22 @@ $CLI claim-from-bundle --dir "$DIR" --nsk "$NSK" --out "$DIR/claim.args" | sed '
 NULL=$(sed -n "s/^--nullifier '//p" "$DIR/claim.args" | tr -d "'")
 
 rule "4. prove and submit (real STARK, RISC0_DEV_MODE=0, ~2.5 min)"
-"$WALLET" account sync-private >/dev/null 2>&1 || true
 FLAT=$(tr '\n' ' ' < "$DIR/claim.args")
+# Sign with a fresh throwaway claimant. On LEZ v0.2.2 a private account that has
+# already spent a commitment carries an extra account identity into the next
+# privacy transaction and the circuit rejects it; a fresh account keeps the
+# identity set at what the claim declares. The eligibility secret is in the
+# witness, so the claimant is only the throwaway signer.
+CW=$(mktemp -d)
+printf '{ "sequencers": [{ "sequencer_addr": "%s" }], "seq_poll_timeout": "30s", "seq_tx_poll_max_blocks": 15, "seq_poll_max_retries": 10, "seq_block_poll_max_amount": 100, "calibration_limit": 100 }\n' "$RPC" > "$CW/wallet_config.json"
+export LEE_WALLET_HOME_DIR="$CW" NSSA_WALLET_HOME_DIR="$CW"
+"$WALLET" account new private </dev/null >/dev/null 2>&1
+CLAIMANT=$("$WALLET" account list </dev/null 2>/dev/null \
+  | grep -oE 'Private/[1-9A-HJ-NP-Za-km-z]+' | sed 's|Private/||' | tail -n1)
+"$WALLET" account sync-private >/dev/null 2>&1 || true
 echo "proving locally, then submitting on the privacy path ..."
 START=$(python3 -c "import time;print(time.time())")
-OUT=$(eval spel --idl "$IDL" --program "$VERIFIER" --bin-claimlez "$CLAIM_LEZ" \
+OUT=$(eval $SPEL --idl "$IDL" --program "$VERIFIER" --bin-claimlez "$CLAIM_LEZ" \
   -- claim --claimant "Private/$CLAIMANT" $FLAT 2>&1) || true
 END=$(python3 -c "import time;print(time.time())")
 TX=$(echo "$OUT" | grep -o 'tx_hash: [0-9a-f]\{64\}' | head -1 | cut -d' ' -f2)
