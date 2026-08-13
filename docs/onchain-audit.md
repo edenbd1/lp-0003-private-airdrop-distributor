@@ -5,7 +5,8 @@ This file records three demonstrations run against the **live** deployed program
 on the privacy-preserving path, showing the deeper guarantees are real and not
 decorative: a claim that does not genuinely prove membership, redirects its
 destination, or repeats cannot even produce a transaction. Each was reproduced on
-the public testnet; the failures happen at proof-generation time, so no invalid
+the public testnet against the current **v0.2.2** verifier (ImageID
+`51a07a8b…77e8e4ab`); the failures happen at proof-generation time, so no invalid
 claim ever reaches a block.
 
 ## 1. Membership is genuinely verified on chain, the chained call is not inert
@@ -17,14 +18,16 @@ anchored). Submit it. The chained `claim_lez` guest runs `airdrop_core::claim`,
 which folds the tampered path and finds it does not reach the committed root:
 
 ```
-Guest panicked: claim is not valid: NotEligible
+thread '<unnamed>' panicked at src/bin/claim_lez.rs:62:29:
+claim is not valid: NotEligible
 Failed to submit privacy-preserving transaction:
-  ProgramProveFailed("Guest panicked: claim is not valid: NotEligible")
+  TransactionBuildError(ProgramProveFailed("Guest panicked: claim is not valid: NotEligible"))
 ```
 
 No proof can be generated, so no transaction exists. If the ChainedCall were
 decorative, this claim would have succeeded, since the verifier's own checks all
-pass. It does not: the membership proof is composed and verified on chain.
+pass. It does not: the membership proof is composed and verified on chain. The
+panic is in `claim_lez` (the chained guest), not the verifier.
 
 ## 2. The destination cannot be redirected
 
@@ -33,7 +36,10 @@ redirecting the allocation would, leaving the destination the witness commits
 unchanged. The guest enforces `witness.destination == statement.destination`:
 
 ```
-Guest panicked: claim is not valid: DestinationMismatch
+thread '<unnamed>' panicked at src/bin/claim_lez.rs:62:29:
+claim is not valid: DestinationMismatch
+Failed to submit privacy-preserving transaction:
+  TransactionBuildError(ProgramProveFailed("Guest panicked: claim is not valid: DestinationMismatch"))
 ```
 
 The submission cannot redirect the allocation without re-proving, which needs the
@@ -42,19 +48,29 @@ secret.
 ## 3. A second claim by the same recipient is rejected
 
 Submit a valid claim; it lands and claims the marker PDA. Submit the same claim
-again. The marker PDA is `init`, so it must be uninitialised:
+again. The marker PDA is created with `init`, so it must be uninitialised, and the
+verifier's account validation rejects the second attempt:
 
 ```
+thread '<unnamed>' panicked at src/bin/claim_verifier.rs:63:1:
 account validation failed: AccountAlreadyInitialized { account_index: 0 }
+Failed to submit privacy-preserving transaction:
+  TransactionBuildError(ProgramProveFailed("Guest panicked: account validation failed: AccountAlreadyInitialized { account_index: 0 }"))
 ```
 
-The first claim landed on chain (tx `07365dc7866540d5e3f7dfad419f1ecc1790f9b4650f12a16a0697d585c66129`);
-the second cannot be built.
+Reproduced against the live deployment: the first claim of distribution `b1…0001`
+landed as `d9236824835c9f6a986c3bc687c04e2c722ad0984009fb0a936767d3c584e13b` and
+claimed marker PDA `7SXfaAhXw9jSGmdgNZ1f6z1p16UL8MbbSNtkPEhQBYQ9` (owned by the
+verifier, confirmed by `scripts/verify-onchain-claim.sh`). Resubmitting that same
+claim, as a different signer, fails to build with the message above; the second
+transaction cannot be produced. Here the panic is in the verifier's account
+validation, not `claim_lez`.
 
 ## Reproduce
 
-These use the deployed programs and a funded private claimant. The valid claim is
-built with `airdrop claim-from-bundle`; the two attack variants tamper the emitted
-arguments (a Merkle-path word; the destination argument) before submission. The
-double-claim is simply the same claim submitted twice. All three fail at
-`send_privacy_preserving_tx` with the messages above.
+These use the deployed programs and a fresh, throwaway private claimant. The valid
+claim is built with `airdrop claim-from-bundle`; the two attack variants tamper the
+emitted arguments (a Merkle-path word; the destination argument) before submission,
+against a fresh distribution whose marker is still unspent. The double-claim
+resubmits a claim whose marker is already on chain. All three fail at proof
+generation with the messages above, so none reaches a block.
