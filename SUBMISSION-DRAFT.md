@@ -1,10 +1,5 @@
 # Solution: LP-0003 — Private Allowlist / Airdrop Distributor
 
-> **Draft.** This is the file that would become `solutions/LP-0003.md` in a PR to
-> `logos-co/lambda-prize`. It is kept here so it can be reviewed before anything
-> is opened upstream. One thing is still outstanding and is marked as such below:
-> the narrated demo video.
-
 **Submitted by:** edenbd1
 
 ## Summary
@@ -31,7 +26,8 @@ re-checks any one of them over JSON-RPC.
 ## Repository
 
 - **Repo:** <https://github.com/edenbd1/lp-0003-private-airdrop-distributor> — dual-licensed MIT OR Apache-2.0
-- **Narrated demo video:** ⚠️ pending — script at `VIDEO_SCRIPT.md`
+- **Video:** <https://youtu.be/mI33jjqxlZE>
+- **Narrated demo video:** <https://youtu.be/mI33jjqxlZE>
 - **Solution write-up:** this document
 - **Deployment + how to re-verify:** [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md)
 - **Basecamp app:** `app/lp-0003-airdrop.lgx` (SHA-256 `cd999028b4461539880c19f755c1ab2fe667c2c2c2e1c03dbd6419c154b08955`), with both `darwin-arm64` and `linux-amd64` variants
@@ -328,8 +324,10 @@ downstream on the marker PDA owned by the verifier, checked as in
 - [x] **CI green on the default branch.**
 - [x] **README documents end-to-end usage**, and `./scripts/demo.sh` runs from a
       clean clone with `RISC0_DEV_MODE=0`, no funded account needed.
-- [ ] **Recorded narrated video demo.** ⚠️ **Not yet recorded.** Script prepared at
-      `VIDEO_SCRIPT.md`.
+- [x] **Recorded narrated video demo.** <https://youtu.be/mI33jjqxlZE> — the
+      terminal is on screen throughout, `RISC0_DEV_MODE=0` is visible before any
+      proving starts, and the claim is proved and submitted to the public testnet
+      during the recording, in one uninterrupted take.
 
 ## FURPS Self-Assessment
 
@@ -389,7 +387,7 @@ finding is in the git history.
 - [`docs/benchmarks/cu-budget.md`](docs/benchmarks/cu-budget.md)
 - [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) — every tx hash and how to re-verify
 - [`docs/onchain-audit.md`](docs/onchain-audit.md) — live adversarial demos
-- Narrated demo video: ⚠️ pending — script at `VIDEO_SCRIPT.md`
+- Narrated demo video: <https://youtu.be/mI33jjqxlZE>
 
 ## What the testnet run taught, and what it cost
 
@@ -412,11 +410,6 @@ until you hit them and neither is a program bug:
    with a perfect indexer, which is the point of the scheme.
    `scripts/verify-onchain-claim.sh` establishes it from the marker PDA, and
    [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) shows the full measurement.
-
-## Outstanding
-
-- **The narrated video has not been recorded.** `VIDEO_SCRIPT.md` has the full
-  script. Nothing in this submission claims otherwise.
 
 ## Terms & Conditions
 
