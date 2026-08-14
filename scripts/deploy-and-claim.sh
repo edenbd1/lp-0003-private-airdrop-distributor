@@ -42,7 +42,7 @@ VERIFIER=artifacts/programs/claim_verifier.bin
 CLAIM_LEZ=artifacts/programs/claim_lez.bin
 
 confirmed() {
-  # LEZ v0.2.2 getTransaction returns Option<(LeeTransaction, BlockId)>: a JSON
+  # LEZ v0.2.4 getTransaction returns Option<(LeeTransaction, BlockId)>: a JSON
   # array `"result":[<tx>,<block>]` for a found tx, `"result":null` otherwise
   # (v0.2.0 returned the tx as a bare string `"result":"..."`).
   curl -s -m 20 -X POST "$RPC" -H 'Content-Type: application/json' \
@@ -97,7 +97,7 @@ run_distribution() { # id count dir base step
     "$CLI" claim-from-bundle --dir "$dir" --nsk "$nsk" --out "$args" >/dev/null 2>&1 \
       || { echo "  SKIP $id $i (row did not open)"; continue; }
     local flat; flat=$(tr '\n' ' ' < "$args")
-    # A throwaway claimant per claim. On LEZ v0.2.2 a private account that has
+    # A throwaway claimant per claim. On LEZ v0.2.4 a private account that has
     # already spent a commitment carries extra account identities into the next
     # privacy transaction, and the circuit rejects the count ("Invalid
     # account_identities length"). A fresh private account each claim keeps the

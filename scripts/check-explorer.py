@@ -1,0 +1,103 @@
+#!/usr/bin/env python3
+"""Decide, by rendering, whether the LEZ explorer has indexed a transaction.
+
+WHY THIS EXISTS
+
+Explorer links in a submission should be measured rather than asserted — and the
+obvious measurement does not work.
+
+The explorer is a WASM application. Every `/transaction/<hash>` URL returns the
+same shell and fetches its content client-side, so an indexed transaction and a
+hash that *cannot exist* are byte-identical over `curl`. A size comparison
+cannot distinguish them, and any conclusion drawn from one is wrong.
+
+So this renders each page in a headless browser and prints the verdict, with an
+impossible hash as the control: whatever the explorer shows for "this does not
+exist" is the baseline every real hash is compared against.
+
+The hashes come from the artifacts, not from the prose:
+
+  - the two deploy transactions are recomputed from the committed binaries
+    (`SHA256(borsh(bytecode))`, content addressed), so they cannot drift from
+    what is actually deployed;
+  - the claims are read from artifacts/e2e/claims.tsv.
+
+    ./scripts/check-explorer.py                    # deploys + a sample of claims
+    ./scripts/check-explorer.py --claims 23        # deploys + every claim
+    ./scripts/check-explorer.py <hash> [<hash>...] # arbitrary hashes
+
+Needs playwright with firefox:  pip install playwright && playwright install firefox
+"""
+import hashlib
+import pathlib
+import struct
+import sys
+
+BASE = "https://explorer.testnet.lez.logos.co"
+IMPOSSIBLE = "de" * 32
+ROOT = pathlib.Path(__file__).resolve().parent.parent
+
+
+def deploy_hash(path):
+    """A LEZ deploy tx hash is SHA256(borsh(bytecode)) = SHA256(u32_le(len) || bytes)."""
+    b = path.read_bytes()
+    return hashlib.sha256(struct.pack("<I", len(b)) + b).hexdigest()
+
+
+def committed_cases(n_claims):
+    cases = []
+    for name in ("claim_lez", "claim_verifier"):
+        p = ROOT / "artifacts" / "programs" / f"{name}.bin"
+        if p.exists():
+            cases.append((f"deploy:{name}", deploy_hash(p)))
+
+    tsv = ROOT / "artifacts" / "e2e" / "claims.tsv"
+    if tsv.exists():
+        rows = [l.split("\t") for l in tsv.read_text().splitlines() if l.strip()]
+        rows = [r for r in rows if len(r) >= 2 and len(r[1]) == 64]
+        for i, r in enumerate(rows[:n_claims]):
+            cases.append((f"claim:{i}", r[1]))
+    return cases
+
+
+def main():
+    try:
+        from playwright.sync_api import sync_playwright
+    except ImportError:
+        sys.exit("playwright is not installed: pip install playwright && playwright install firefox")
+
+    args = sys.argv[1:]
+    n_claims = 3
+    if args and args[0] == "--claims":
+        n_claims = int(args[1])
+        args = args[2:]
+
+    cases = [("control:impossible", IMPOSSIBLE)]
+    cases += [(f"arg{i}", h) for i, h in enumerate(args)] if args else committed_cases(n_claims)
+    if len(cases) == 1:
+        sys.exit("no hashes found under artifacts/ and none given")
+
+    results = []
+    with sync_playwright() as p:
+        browser = p.firefox.launch(headless=True)
+        page = browser.new_page(viewport={"width": 1280, "height": 1400})
+        for label, h in cases:
+            page.goto(f"{BASE}/transaction/{h}", wait_until="load", timeout=60000)
+            try:
+                page.wait_for_load_state("networkidle", timeout=30000)
+            except Exception:
+                pass
+            page.wait_for_timeout(4000)
+            results.append((label, h, " ".join(page.inner_text("body").split())))
+        browser.close()
+
+    control = results[0][2]
+    print(f"{'hash':<22} {'':<10} verdict")
+    for label, h, text in results[1:]:
+        verdict = "NOT INDEXED (same as control)" if text == control else "INDEXED"
+        print(f"{label:<22} {h[:8]}…  {verdict}")
+    print(f"\ncontrol ({IMPOSSIBLE[:8]}…, a hash that cannot exist) renders:\n  {control[:300]}")
+
+
+if __name__ == "__main__":
+    main()

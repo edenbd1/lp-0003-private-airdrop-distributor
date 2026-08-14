@@ -3,15 +3,15 @@
 // WHAT MAKES THE CLAIM REAL ON CHAIN
 //
 // A LEZ public transaction re-executes rather than proves
-// (`lee/state_machine/src/program.rs:73-77`), so no program on the public path
-// can verify a claim proof. This program targets the privacy-preserving path,
-// where LEZ's circuit composes each chained call with a real `env::verify` over
-// the callee's `ProgramOutput`
-// (`lee/privacy_preserving_circuit/src/execution_state.rs:149`) and the sequencer
-// checks the receipt against the pinned `PRIVACY_PRESERVING_CIRCUIT_ID`. The
-// `claim` instruction declares a ChainedCall to the LEZ-native claim program, so
-// the membership proof is genuinely verified on chain as a precondition of the
-// transaction being accepted.
+// (`lee/state_machine/src/program/mod.rs:73-77`), so no program on the public
+// path can verify a claim proof. This program targets the privacy-preserving
+// path, where LEZ's circuit composes each chained call with a real `env::verify`
+// over the callee's `ProgramOutput`
+// (`lee/privacy_preserving_circuit/src/execution_state.rs:149-155`) and the
+// sequencer checks the receipt against the pinned
+// `PRIVACY_PRESERVING_CIRCUIT_ID`. The `claim` instruction declares a
+// ChainedCall to the LEZ-native claim program, so the membership proof is
+// genuinely verified on chain as a precondition of the transaction's acceptance.
 //
 // WHY THE ROOT IS ANCHORED, NOT PROVER-CHOSEN
 //
@@ -29,7 +29,7 @@
 // PRIVACY AND UNLINKABILITY
 //
 // A privacy `Message` publishes neither `program_id` nor `instruction_data`
-// (`privacy_preserving_transaction/message.rs:14-24`). The only public trace a
+// (`privacy_preserving_transaction/message.rs:14-27`). The only public trace a
 // claim leaves is the marker PDA, seeded by
 // `SHA256(CLAIM_MARKER_PREFIX || distribution_id || nullifier)`. The nullifier is
 // `SHA256(CLAIM_NULLIFIER_PREFIX || distribution_id || nsk)`, a function of the
@@ -51,13 +51,13 @@ const E_MARKER_SEED_MISMATCH: u32 = 4004;
 const E_ALLOCATION_MISMATCH: u32 = 4006;
 
 /// ProgramId of the LEZ-native claim program (`claim_lez.bin`,
-/// ImageID `8faaa67c4df39390116245cde12b5325a5c1b3347dd332092a06d8feb48c79c0`).
+/// ImageID `e9843420155078b6103921df89d88f78fe84698d731a8914a68f701d67b57449`).
 /// The deployment is content-addressed, so this pins exactly the audited binary.
 ///
 /// Verify with:
 ///   spel program-id artifacts/programs/claim_lez.bin
 pub const CLAIM_LEZ_PROGRAM_ID: nssa_core::program::ProgramId = [
-    2091297423, 2425615181, 3443876369, 626207713, 884195749, 154325885, 4275570218, 3229191348,
+    540312809, 3061338133, 3743496464, 2022693001, 2372502782, 344529523, 493916070, 1232385383,
 ];
 
 #[lez_program]
@@ -110,6 +110,9 @@ mod claim_verifier {
     ///   it to the witness, so the submission cannot redirect it.
     #[instruction]
     pub fn claim(
+        // Injected by the dispatcher from the trusted `ProgramInput`; never part
+        // of the instruction ABI or IDL, so the published IDL is unchanged.
+        ctx: ProgramContext,
         #[account(init, pda = arg("claim_marker_seed"))]
         claim_marker: AccountWithMetadata,
         #[account(pda = [arg("distribution_id"), arg("distribution_root")])]
@@ -161,11 +164,18 @@ mod claim_verifier {
 
         // 4. Anchor the root. The macro's `pda = [distribution_id, distribution_root]`
         //    constraint already guarantees `distribution` is the PDA for exactly
-        //    the claimed root. Requiring it to be owned by this program rejects an
+        //    the claimed root. Requiring it to be owned by *this* program rejects an
         //    invented root: only `create_distribution` initialises these PDAs, and
         //    it does so for the real committed root, so a fabricated root lands on
         //    an uninitialised address whose owner is the default.
-        if distribution.account.program_owner == nssa_core::program::DEFAULT_PROGRAM_ID {
+        //
+        //    Comparing against `self_program_id` rather than merely against
+        //    `DEFAULT` is the stricter form. A PDA address already embeds the
+        //    program id, so an address in this program's namespace can only be
+        //    owned by `DEFAULT` or by this program, which is why the weaker check
+        //    was not exploitable — but the guarantee now rests on the check itself
+        //    rather than on that derivation argument holding.
+        if distribution.account.program_owner != ctx.self_program_id {
             return Err(SpelError::custom(
                 E_ROOT_NOT_ANCHORED,
                 "no distribution is committed for this (id, root): the root is not anchored",

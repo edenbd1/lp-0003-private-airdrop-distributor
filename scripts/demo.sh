@@ -5,7 +5,7 @@
 #
 # Steps 1-3 run the adversarial suites against the *sequencer's own executor* —
 # the same executor, the same input order, the same 32M session limit the chain
-# uses (`lee/state_machine/src/program.rs:55-110`). A rejection you see there is
+# uses (`lee/state_machine/src/program/mod.rs:55-110`). A rejection you see there is
 # the rejection the chain performs, byte for byte, because it is the same
 # committed binary fed the same inputs.
 #
@@ -59,9 +59,10 @@ echo "for no one, and a recovered row reconstructs the exact committed leaf."
 cargo test -p airdrop-crypto --quiet 2>&1 | grep -E "result: ok\. [1-9]" | sed 's/^/   /'
 
 rule "3. the on-chain checks, through the sequencer's executor"
-echo "7 tests against the built verifier binary: an honest claim accepted, a"
-echo "forged nullifier / unanchored root / inflated allocation / forged marker /"
-echo "double-claim each rejected with its documented error code."
+echo "8 tests against the built verifier binary: an honest claim accepted, a"
+echo "forged nullifier / unanchored root / foreign-owned distribution / inflated"
+echo "allocation / forged marker / double-claim each rejected with its documented"
+echo "error code, and a rejected claim leaving the recipient free to retry."
 if command -v r0vm >/dev/null 2>&1; then
   cargo test -p claim-verifier-tests --quiet 2>&1 | grep -E "result: ok\. [1-9]" | sed 's/^/   /'
 else
@@ -95,7 +96,7 @@ if command -v r0vm >/dev/null 2>&1; then
     | grep -E 'user cycles|proving cycles|budget consumed' | sed 's/^/   /'
 else
   echo "   (measured through r0vm, which is absent here; see docs/benchmarks/cu-budget.md)"
-  echo "   claim: 333,565 user cycles / 524,288 proving cycles = 1.56% of the budget"
+  echo "   claim: 318,242 user cycles / 524,288 proving cycles = 1.56% of the budget"
 fi
 
 rule "8. what an observer sees"

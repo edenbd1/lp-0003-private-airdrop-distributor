@@ -6,7 +6,7 @@
 # privacy path. It is the narrated video's proof-generation scene.
 #
 #   SIGNER=<funded public id> ./scripts/prove-one-claim.sh
-# Needs the v0.2.2 wallet (WALLET_BIN) and the vendored spel (SPEL_BIN) on hand.
+# Needs the v0.2.4 wallet (WALLET_BIN) and the vendored spel (SPEL_BIN) on hand.
 #
 # Needs `spel` and `wallet` on PATH and a funded SIGNER. Each run uses a fresh,
 # random distribution id, so it never collides with a previous run.
@@ -32,7 +32,7 @@ rm -rf "$DIR"
 
 confirmed() { curl -s -m 25 -X POST "$RPC" -H 'Content-Type: application/json' \
   -d "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"getTransaction\",\"params\":[\"$1\"]}" \
-  | grep -qE '"result":\['; }  # v0.2.2: getTransaction returns [tx, block]
+  | grep -qE '"result":\['; }  # v0.2.4: getTransaction returns [tx, block]
 rule() { printf '\n\033[1m== %s\033[0m\n' "$1"; }
 
 # A fresh distribution id each run, so re-running never hits a double-claim.
@@ -67,9 +67,9 @@ NSK=$(python3 -c "import json;print(json.load(open('$DIR/recipients.json'))[0]['
 $CLI claim-from-bundle --dir "$DIR" --nsk "$NSK" --out "$DIR/claim.args" | sed 's/^/   /'
 NULL=$(sed -n "s/^--nullifier '//p" "$DIR/claim.args" | tr -d "'")
 
-rule "4. prove and submit (real STARK, RISC0_DEV_MODE=0, ~2.5 min)"
+rule "4. prove and submit (real STARK, RISC0_DEV_MODE=0; timed below, per machine)"
 FLAT=$(tr '\n' ' ' < "$DIR/claim.args")
-# Sign with a fresh throwaway claimant. On LEZ v0.2.2 a private account that has
+# Sign with a fresh throwaway claimant. On LEZ v0.2.4 a private account that has
 # already spent a commitment carries an extra account identity into the next
 # privacy transaction and the circuit rejects it; a fresh account keeps the
 # identity set at what the claim declares. The eligibility secret is in the

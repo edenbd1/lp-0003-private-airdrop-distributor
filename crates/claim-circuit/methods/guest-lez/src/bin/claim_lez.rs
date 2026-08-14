@@ -2,21 +2,21 @@
 //
 // WHY THIS EXISTS
 //
-// The one path on LEZ v0.2.0 where a proof is genuinely verified on chain is the
+// The one path on LEZ v0.2.4 where a proof is genuinely verified on chain is the
 // privacy-preserving transaction: the client proves locally, and LEZ's privacy
 // circuit composes each chained call with a real `env::verify` over the callee's
-// `ProgramOutput` (`lee/privacy_preserving_circuit/src/execution_state.rs:149`),
-// which the sequencer then checks against the pinned
-// `PRIVACY_PRESERVING_CIRCUIT_ID`. To take part in that composition, the claim
-// proof has to *be* a LEZ program: read via `read_lee_inputs`, emit a
-// `ProgramOutput`. That is this file.
+// `ProgramOutput`
+// (`lee/privacy_preserving_circuit/src/execution_state.rs:149-155`), which the
+// sequencer then checks against the pinned `PRIVACY_PRESERVING_CIRCUIT_ID`. To
+// take part in that composition, the claim proof has to *be* a LEZ program: read
+// via `read_lee_inputs`, emit a `ProgramOutput`. That is this file.
 //
 // PRIVACY
 //
 // The witness travels in the instruction. That is safe only on the privacy path:
 // a privacy `Message` publishes commitments and nullifiers but carries neither
 // `program_id` nor `instruction_data`
-// (`lee/state_machine/src/privacy_preserving_transaction/message.rs:14-24`). A
+// (`lee/state_machine/src/privacy_preserving_transaction/message.rs:14-27`). A
 // public `Message` publishes `instruction_data` verbatim, so this program must
 // never be invoked on the public path. It is not: the verifier reaches it through
 // a ChainedCall inside a privacy transaction.

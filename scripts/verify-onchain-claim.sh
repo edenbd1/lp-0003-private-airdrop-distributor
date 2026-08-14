@@ -18,7 +18,7 @@
 #   2. The claim transaction is PrivacyPreserving, not Public. A public tx proves
 #      and verifies nothing (program.rs:73-77, "Execute the program (without
 #      proving)"); only the privacy path carries a receipt the sequencer verifies
-#      and composes chained calls with env::verify (execution_state.rs:149).
+#      and composes chained calls with env::verify (execution_state.rs:149-155).
 #   3. The embedded receipt is a Succinct STARK, not a RISC0_DEV_MODE fake.
 #   4. The claim marker PDA is DERIVED here from the verifier ImageID and the
 #      nullifier, not asserted. The nullifier is submitter-supplied (a function of
@@ -87,7 +87,7 @@ if [ -z "$CLAIM_TX" ]; then
 fi
 
 echo "[2/5] the claim transaction is PrivacyPreserving, not Public"
-# v0.2.2 getTransaction returns [transaction, block_id]; the transaction is [0].
+# v0.2.4 getTransaction returns [transaction, block_id]; the transaction is [0].
 TX_B64=$(rpc getTransaction "[\"$CLAIM_TX\"]" | jq -r '.result[0] // empty')
 if [ -z "$TX_B64" ]; then
   bad "claim transaction not found  $CLAIM_TX"
@@ -124,7 +124,7 @@ echo
 
 echo "[4/5] derive the claim marker PDA from the ImageID and the enforced claim"
 VID=$(image_id "$VERIFIER_BIN")
-[ -n "$VID" ] || VID=51a07a8bb039a079b549b4c0cd71f22b413afb9db04f2ae28c3c25ee77e8e4ab
+[ -n "$VID" ] || VID=31edc17c350735a61205eb2c14164b3fa610df57e6c0c87e7180e5d4a110385d
 # The marker seed commits to the distribution and the nullifier:
 #   seed   = SHA256(CLAIM_MARKER_PREFIX || distribution_id || nullifier)
 #   marker = PDA(verifier, seed)

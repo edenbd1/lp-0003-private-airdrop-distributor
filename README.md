@@ -43,11 +43,11 @@ commitment.
   (`crates/claim-verifier-spel`). Its `claim` instruction declares a
   `ChainedCall` to the LEZ-native claim program (`crates/claim-circuit`), so on
   the privacy-preserving path LEZ's circuit composes the membership proof with a
-  real `env::verify` (`lee/privacy_preserving_circuit/src/execution_state.rs:149`)
+  real `env::verify` (`lee/privacy_preserving_circuit/src/execution_state.rs:149-155`)
   and the sequencer verifies the receipt against the pinned
   `PRIVACY_PRESERVING_CIRCUIT_ID`. No program on the public path could do this: a
   public transaction re-executes rather than proves
-  (`lee/state_machine/src/program.rs:73-77`).
+  (`lee/state_machine/src/program/mod.rs:73-77`).
 - **The primitive.** `crates/airdrop-core` holds the claim statement and its
   derivations, shared by the guest and the verifier so there is one source of
   truth for what a claim proves.
@@ -61,8 +61,8 @@ Both programs are live on the public LEZ testnet. A deploy tx hash is
 
 | Program | ImageID | Deploy tx |
 |---|---|---|
-| Claim program (LEZ-native, `claim_lez.bin`) | `8faaa67c…b48c79c0` | `4a8dab27…8c5fdf59` |
-| Claim verifier (SPEL, `claim_verifier.bin`) | `51a07a8b…77e8e4ab` | `90f615d4…a22defe7` |
+| Claim program (LEZ-native, `claim_lez.bin`) | `e9843420…67b57449` | `59c2160b…cbbea7c5` |
+| Claim verifier (SPEL, `claim_verifier.bin`) | `31edc17c…a110385d` | `7b16e471…7092e34c` |
 
 Two distributions are committed under the verifier and **23 privacy-preserving
 claims** are landed against them; the full `(distribution, claim tx, nullifier)`
@@ -151,6 +151,7 @@ honest claim accepted as the control:
 | Attack | Rejected with |
 |---|---|
 | Prove membership against an invented root | `4003` not anchored |
+| Point at a distribution owned by another program | `4003` not anchored |
 | Substitute a nullifier of your choosing | `4002` nullifier mismatch |
 | Claim more than your sealed allocation | `4006` allocation mismatch |
 | Land the claim at a misrepresenting address | `4004` marker seed mismatch |
@@ -178,9 +179,9 @@ Deployment record and reproduction steps are in
 
 ## A note on the LEZ source citations
 
-Paths like `lee/state_machine/src/program.rs:73-77` resolve against
-`logos-execution-zone` at commit `d6e4ae6` (tag `v0.2.2`), the release the public testnet runs and
-the one this project builds against.
+Paths like `lee/state_machine/src/program/mod.rs:73-77` resolve against
+`logos-execution-zone` at commit `47eba25` (tag `v0.2.4`), the release this
+project builds against.
 
 ## License
 

@@ -5,9 +5,13 @@ This file records three demonstrations run against the **live** deployed program
 on the privacy-preserving path, showing the deeper guarantees are real and not
 decorative: a claim that does not genuinely prove membership, redirects its
 destination, or repeats cannot even produce a transaction. Each was reproduced on
-the public testnet against the current **v0.2.2** verifier (ImageID
-`51a07a8b…77e8e4ab`); the failures happen at proof-generation time, so no invalid
+the public testnet against the current **v0.2.4** verifier (ImageID
+`31edc17c…a110385d`); the failures happen at proof-generation time, so no invalid
 claim ever reaches a block.
+
+They are not a one-off transcript: `scripts/adversarial-onchain.sh` re-runs all
+three against whatever is deployed, and fails if any of them produces a
+transaction instead of the rejection below.
 
 ## 1. Membership is genuinely verified on chain, the chained call is not inert
 
@@ -59,8 +63,8 @@ Failed to submit privacy-preserving transaction:
 ```
 
 Reproduced against the live deployment: the first claim of distribution `b1…0001`
-landed as `d9236824835c9f6a986c3bc687c04e2c722ad0984009fb0a936767d3c584e13b` and
-claimed marker PDA `7SXfaAhXw9jSGmdgNZ1f6z1p16UL8MbbSNtkPEhQBYQ9` (owned by the
+landed as `441ccd15e7b5eac388a0849481e95db409f1b6f23a202b6ee1a3ce37ae112c86` and
+claimed marker PDA `B4VTZUENS1Ckmaiv8h44QcU5r276pEgTE2nEwGSGsf16` (owned by the
 verifier, confirmed by `scripts/verify-onchain-claim.sh`). Resubmitting that same
 claim, as a different signer, fails to build with the message above; the second
 transaction cannot be produced. Here the panic is in the verifier's account
@@ -68,9 +72,18 @@ validation, not `claim_lez`.
 
 ## Reproduce
 
+```bash
+SIGNER=<funded public id> ./scripts/adversarial-onchain.sh
+```
+
 These use the deployed programs and a fresh, throwaway private claimant. The valid
 claim is built with `airdrop claim-from-bundle`; the two attack variants tamper the
 emitted arguments (a Merkle-path word; the destination argument) before submission,
-against a fresh distribution whose marker is still unspent. The double-claim
-resubmits a claim whose marker is already on chain. All three fail at proof
-generation with the messages above, so none reaches a block.
+against a fresh distribution whose marker is still unspent — so nothing but the
+tampering can account for the rejection. The double-claim resubmits a claim whose
+marker is already on chain. All three fail at proof generation with the messages
+above, so none reaches a block.
+
+The script treats a produced transaction as a failure, not just an unexpected
+error message: an attack that got through would fail the run loudly rather than
+pass for the wrong reason.

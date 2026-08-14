@@ -26,7 +26,6 @@ re-checks any one of them over JSON-RPC.
 ## Repository
 
 - **Repo:** <https://github.com/edenbd1/lp-0003-private-airdrop-distributor> — dual-licensed MIT OR Apache-2.0
-- **Video:** <https://youtu.be/mI33jjqxlZE>
 - **Narrated demo video:** <https://youtu.be/mI33jjqxlZE>
 - **Solution write-up:** this document
 - **Deployment + how to re-verify:** [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md)
@@ -41,8 +40,8 @@ what `scripts/verify-onchain-claim.sh` step 1 checks.
 
 | Program | ImageID | Deploy tx |
 |---|---|---|
-| Claim program (LEZ-native) | `8faaa67c…b48c79c0` | `4a8dab271c2ac4f3b19c38b45e3f05fa4f413a0ac84a7b28030abebc8c5fdf59` |
-| Claim verifier (SPEL) | `51a07a8b…77e8e4ab` | `90f615d4045db10c2e42c44d15bf80f36a7a72e31df51e3bda6c46e4a22defe7` |
+| Claim program (LEZ-native) | `e9843420…67b57449` | `59c2160b40c5d0f4cce01fd89e7755dbafd9c7d088a071d6f6fd3a10cbbea7c5` |
+| Claim verifier (SPEL) | `31edc17c…a110385d` | `7b16e471b35ce8c718e066d80a8198f8831ebc7b6704583ddd28bb287092e34c` |
 
 Two distributions are committed under the current verifier, and 23 claims are
 landed against them (12 + 11). A distribution's PDA is derived from
@@ -50,21 +49,22 @@ landed against them (12 + 11). A distribution's PDA is derived from
 
 | Distribution | id | recipients | eligibility root |
 |---|---|---|---|
-| 1 | `b1…0001` | 12 | `87f8333b…8f99eaf4` |
-| 2 | `b2…0002` | 11 | `676250fb…63afb678` |
+| 1 | `b1…0001` | 12 | `e48c5f4f…ea6a45bcc` |
+| 2 | `b2…0002` | 11 | `7b5078e8…9ed4eb44a` |
 
 The full list of (distribution, claim tx, nullifier) is committed at
 [`artifacts/e2e/claims.tsv`](artifacts/e2e/claims.tsv). A claim is a
 **privacy-preserving** transaction, so it publishes no `program_id` or
-`instruction_data`. It is live over RPC (`getTransaction`) but not shown by the
-block explorer, whose coverage is irregular and also drops a public
-`create_distribution` (measured, see [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md)),
-so the RPC is the source of truth. Verify any claim from public data over
-JSON-RPC:
+`instruction_data`. It is live over RPC (`getTransaction`) immediately; the block
+explorer is a separate index and reaches it later, so on a recent hash the RPC is
+the source of truth (measured, see [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md)).
+Once indexed, the explorer shows the claim's type, its proof size and the marker
+PDA — and nothing naming a distribution or an address. Verify any claim from
+public data over JSON-RPC:
 
 ```bash
-CLAIM_TX=d9236824835c9f6a986c3bc687c04e2c722ad0984009fb0a936767d3c584e13b \
-NULLIFIER=4920f6fc4e4c50597b45cef083126decfe432a1100815f16bcfb128b0dfcbef8 \
+CLAIM_TX=441ccd15e7b5eac388a0849481e95db409f1b6f23a202b6ee1a3ce37ae112c86 \
+NULLIFIER=3db769e851c291d82cb79d717f1256710bb67b06a50cc52bea3f4ae1fea32b99 \
 DISTRIBUTION_ID=b100000000000000000000000000000000000000000000000000000000000001 \
 ./scripts/verify-onchain-claim.sh
 ```
@@ -73,13 +73,14 @@ which confirms the transaction is `PrivacyPreserving`, its receipt is a `Succinc
 STARK the sequencer verified, and the claim marker PDA is owned by the verifier:
 the membership proof was verified on chain as a precondition of acceptance.
 
-> This deployment targets **LEZ v0.2.2** (commit `d6e4ae6`), the version the
-> public testnet runs after its 2026-08-05 reset and upgrade from v0.2.0. The two
-> programs were rebuilt against v0.2.2 — the privacy circuit id changed, so
-> v0.2.0 proofs no longer verify and its deployment no longer exists on the reset
-> chain — which is why these ImageIDs differ from any earlier v0.2.0 write-up. The
-> SPEL framework has no v0.2.2 release yet, so `vendor/spel` carries the upstream
-> v0.6.0 sources repinned and ported to v0.2.2 (see `vendor/spel`).
+> This deployment targets **LEZ v0.2.4** (commit `47eba25`). Both programs are
+> built against it, which is why these ImageIDs differ from any earlier v0.2.0 or
+> v0.2.2 write-up, and why the deploy transactions differ with them: a deploy hash
+> is `SHA256(borsh(bytecode))`, so a new ImageID is a new deploy. The ImageID moves
+> even where the dependency sources do not, because a guest's panic messages embed
+> the cargo checkout path, and that path contains the pinned revision. The SPEL
+> framework has no release targeting a current LEZ, so `vendor/spel` carries the
+> upstream v0.6.0 sources repinned and ported to v0.2.4 (see `vendor/spel`).
 
 ## Approach
 
@@ -87,14 +88,14 @@ the membership proof was verified on chain as a precondition of acceptance.
 
 The first thing I checked was whether a LEZ **public** transaction verifies a
 proof. It does not — the sequencer re-executes the program host-side
-(`lee/state_machine/src/program.rs:73-77`, commented *"Execute the program
+(`lee/state_machine/src/program/mod.rs:73-77`, commented *"Execute the program
 (without proving)"*). An airdrop built there would be a membership check wearing a
 zero-knowledge costume, which is the ground on which earlier submissions in this
 program were rejected.
 
 The path that works is the **privacy-preserving transaction**: the client proves
 locally, LEZ's privacy circuit composes each chained call with a real
-`env::verify` (`lee/privacy_preserving_circuit/src/execution_state.rs:149`), and
+`env::verify` (`lee/privacy_preserving_circuit/src/execution_state.rs:149-155`), and
 the sequencer verifies the receipt against the pinned circuit id. For that
 composition to happen the callee must *be* a LEZ program emitting a
 `ProgramOutput`, which is why `claim_lez` exists in the shape it does rather than
@@ -149,8 +150,11 @@ domain separator distinct from the nullifier and account key, authenticated with
 ChaCha20-Poly1305. An observer sees only ciphertext and ephemeral keys. A
 recipient trial-opens each row and keeps the one whose payload reconstructs a leaf
 that anchors to the committed root — so a malicious distributor cannot make them
-prove a leaf that is not in the set. `--pad` rounds the row count up with dummy
-rows that open for no one, hiding the recipient count.
+prove a leaf that is not in the set, and a junk row injected into the open bundle
+is skipped rather than adopted. Non-contributory X25519 shared secrets are
+rejected, so a crafted low-order ephemeral header cannot collapse every
+recipient's key to the same value. `--pad` rounds the row count up with dummy rows
+that open for no one, hiding the recipient count.
 
 ### What did not work
 
@@ -163,21 +167,6 @@ rows that open for no one, hiding the recipient count.
 - **Enabling risc0's `prove` feature** so tests prove in-process. It drags in GPU
   backends (Metal on macOS) that most machines lack; CI installs `r0vm` and the
   adversarial suites execute through the sequencer's own executor instead.
-
-### What an adversarial audit found in my own code
-
-After the first version worked end to end, I ran an adversarial audit — tests and
-reviewers whose job is to *break* the code, not confirm it. It found a robustness
-gap in the bundle-opening path. `decrypt_row` used the raw X25519 shared secret,
-so a crafted low-order ephemeral header would collapse the shared secret to the
-same value for every recipient — one injected row would open for everyone. It is
-funds-safe (the on-chain re-check rejects any forged payload), but a griefer who
-could add a row to the open bundle could hand recipients garbage and break their
-claim. The fix rejects non-contributory shared secrets, and the recipient scan now
-keeps the first row that *anchors to the committed root*, not merely the first
-that decrypts — so junk rows are skipped. Both halves are pinned by new tests,
-including one that runs through the deployed binary. The finding and fix are in
-the git history rather than quietly patched.
 
 ### Why the Logos stack
 
@@ -249,8 +238,8 @@ Stated in [`docs/limitations.md`](docs/limitations.md): the encrypted bundle
 reveals cardinality unless padded (and padding hides count from a counter, not a
 length-measurer); the destination is bound in the proof but not in the marker
 seed; `create_distribution` is permissionless, so an integrator must key
-proof-of-claim on `(distribution_id, root)`, not `distribution_id` alone; three
-non-exploitable hardenings are deferred because they would re-key the deployment.
+proof-of-claim on `(distribution_id, root)`, not `distribution_id` alone; two
+non-exploitable hardenings remain open, each for a reason of its own.
 To integrate: commit a root with `create_distribution`, publish the bundle, and
 have each recipient run `claim-from-bundle` then submit on the privacy path; gate
 downstream on the marker PDA owned by the verifier, checked as in
@@ -308,7 +297,7 @@ downstream on the marker PDA owned by the verifier, checked as in
 
 - [x] **CU cost of each on-chain operation documented.**
       [`docs/benchmarks/cu-budget.md`](docs/benchmarks/cu-budget.md): `claim` is
-      333,565 user cycles / 524,288 proving cycles = 1.56% of the public budget,
+      318,242 user cycles / 524,288 proving cycles = 1.56% of the public budget,
       measured by replaying through the sequencer's own executor and reproducible
       with one command. `create_distribution` is lighter (a single PDA init).
 
@@ -362,20 +351,22 @@ mistaken for a failed one.
 ### Performance
 
 `claim` at 1.56% of the public compute budget, in a single segment. Wall-clock is
-dominated by proving: on Apple-Silicon CPU a claim proves and submits in about 2.5
-minutes (measured 153 s end to end with `RISC0_DEV_MODE=0`, proving being nearly
-all of it). That is the real constraint on a lifecycle run and is stated as such
-rather than hidden behind the cycle count.
+dominated by proving, and runs to minutes rather than seconds with
+`RISC0_DEV_MODE=0`. It is deliberately not quoted as one fixed number: it depends
+on the machine and on what else is competing for its cores, and the same claim
+measurably slows when an unrelated build is running. `scripts/prove-one-claim.sh`
+times it and prints what it measured, and the recorded demo shows that clock
+running rather than asserting a figure. That latency is the real constraint on a
+lifecycle run and is stated as such rather than hidden behind the cycle count.
 
 ### Supportability
 
-29 tests across the workspace plus an executor-level suite against the deployed
+30 tests across the workspace plus an executor-level suite against the deployed
 binary, all green in CI, which runs the adversarial e2e unconditionally and fails
 on any ImageID drift. The two guest crates are excluded from the host workspace
 because they target `riscv32im-risc0-zkvm-elf`, but the deployed verifier is still
-under test because `claim-verifier-tests` exercises the built binary. An
-adversarial audit hardened the bundle-opening path after the first deployment; the
-finding is in the git history.
+under test because `claim-verifier-tests` exercises the built binary — including
+the anchoring check, with a case that a weaker form of it would let through.
 
 ## Supporting Materials
 
@@ -399,15 +390,16 @@ until you hit them and neither is a program bug:
    stale commitment is dropped by the sequencer. `account sync-private` before
    each claim fixes it, and `scripts/deploy-and-claim.sh` does so.
 2. **The block explorer and the privacy design are two separate things, and
-   conflating them weakens the second.** (a) The explorer's index is irregular:
-   measured, two of the six on-chain transactions do not display, and one is a
-   *public* `create_distribution` while the two public distributions before it
-   do, and a cannot-exist hash returns the same "not found" — so "not shown"
-   means "no index record", not "dead", and `getTransaction` returns all six.
-   That is a Logos indexer limitation unrelated to the design, filed upstream at
-   `logos-blockchain/lez-explorer-ui#15`. (b) Independently, a privacy transaction
-   publishes no `program_id` or `instruction_data`, so it is unattributable even
-   with a perfect indexer, which is the point of the scheme.
+   conflating them weakens the second.** (a) The explorer lags the sequencer:
+   measured, a deploy confirmed on chain at 02:15 was absent from the explorer at
+   03:51 and present at 04:07, while a cannot-exist hash returns "not found" at
+   every point — so "not shown" on a recent hash means "not indexed yet", not
+   "dead", and `getTransaction` returns it immediately. That is an indexing delay,
+   unrelated to the design. (b) Independently, a privacy transaction publishes no
+   `program_id` or `instruction_data`, so it is unattributable however good the
+   indexer is — which is the point of the scheme, and which the explorer itself
+   demonstrates: an indexed claim renders its type, its proof size and the marker
+   PDA, and nothing that names a distribution or an address.
    `scripts/verify-onchain-claim.sh` establishes it from the marker PDA, and
    [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) shows the full measurement.
 
