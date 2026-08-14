@@ -72,5 +72,5 @@ jobs:
             fi
             echo "OK $1 $got"
           }
-          check artifacts/programs/claim_lez.bin      8faaa67c4df39390116245cde12b5325a5c1b3347dd332092a06d8feb48c79c0
-          check artifacts/programs/claim_verifier.bin 51a07a8bb039a079b549b4c0cd71f22b413afb9db04f2ae28c3c25ee77e8e4ab
+          check artifacts/programs/claim_lez.bin      e9843420155078b6103921df89d88f78fe84698d731a8914a68f701d67b57449
+          check artifacts/programs/claim_verifier.bin 31edc17c350735a61205eb2c14164b3fa610df57e6c0c87e7180e5d4a110385d

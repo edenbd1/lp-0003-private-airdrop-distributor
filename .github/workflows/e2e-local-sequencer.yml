@@ -27,10 +27,9 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  # The revision this was developed and verified against — v0.2.2, the release
-  # the public testnet runs. Floating HEAD would turn an upstream change into a
-  # red build here with no change of ours.
-  LEZ_REV: d6e4ae6
+  # The revision this was developed and verified against — v0.2.4. Floating HEAD
+  # would turn an upstream change into a red build here with no change of ours.
+  LEZ_REV: 47eba25
   CARGO_TERM_COLOR: always
 
 jobs:
@@ -67,14 +66,29 @@ jobs:
           echo "$HOME/.risc0/bin" >> "$GITHUB_PATH"
           "$HOME/.risc0/bin/rzup" install r0vm 3.0.5
 
-      - name: Build the vendored spel (ported to LEZ v0.2.2)
-        # spel has no v0.2.2 release, so vendor/spel carries the upstream v0.6.0
-        # sources repinned to lee_core d6e4ae6 and ported to the v0.2.2 API (the
-        # `vpk` private-PDA arg, the async multi-sequencer WalletCore). Install
-        # that; the published v0.6.0 spel does not build against v0.2.2. `spel
-        # --help` exits 1, so confirm the binary is on PATH instead.
+      # v0.2.4 builds lez/keycard_wallet, which links against PC/SC. Taken from
+      # LEZ's own ci.Dockerfile rather than assembled one package per failure.
+      - name: System libraries LEZ needs
         run: |
-          cargo install --path vendor/spel/spel-cli
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            build-essential clang libclang-dev libssl-dev pkg-config \
+            libpcsclite-dev curl git jq python3-dev
+
+      - name: Build the vendored spel (ported to LEZ v0.2.4)
+        # spel has no release targeting a current LEZ, so vendor/spel carries the
+        # upstream v0.6.0 sources repinned to lee_core 47eba25 and ported to the
+        # v0.2.4 API (the `vpk` private-PDA arg, the async multi-sequencer
+        # WalletCore). Install that; the published v0.6.0 spel does not build
+        # against it. `spel --help` exits 1, so confirm the binary is on PATH
+        # instead.
+        #
+        # `--locked` is load-bearing: unlike `cargo build`, `cargo install`
+        # ignores the committed Cargo.lock and re-resolves to the newest
+        # compatible dependencies. That is why this job went red on a schedule
+        # with no change of ours — an upstream release, not our code.
+        run: |
+          cargo install --path vendor/spel/spel-cli --locked
           command -v spel
 
       - name: Build the standalone sequencer and the wallet

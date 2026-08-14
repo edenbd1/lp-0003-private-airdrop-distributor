@@ -62,13 +62,17 @@ set) and out of scope here.
 
 Two independent facts, kept apart because conflating them weakens the second:
 
-1. **The indexer's coverage is incomplete.** The public testnet's explorer does
-   not hold every transaction the sequencer does, so some of this project's
-   on-chain transactions display there and some do not. "Not shown" means "no
-   index record", not "dead": `getTransaction` over RPC returns each live
-   transaction (non-null), and `null` for a hash that cannot exist, so the RPC is
-   the source of truth. This is a Logos indexer limitation unrelated to the
-   design, reported upstream at `logos-blockchain/lez-explorer-ui#15`.
+1. **The explorer lags the sequencer.** The public testnet's explorer is a
+   separate index and reaches a transaction later than the RPC does. Measured on
+   this deployment: a deploy confirmed on chain at 02:15 was still absent from the
+   explorer at 03:51 and present at 04:07, and every claim sampled from the
+   previous run is indexed. So "not shown" on a fresh hash means "not indexed
+   yet", not "dead": `getTransaction` over RPC returns each live transaction
+   immediately, and `null` for a hash that cannot exist, which makes the RPC the
+   source of truth for anything recent. `scripts/check-explorer.py` reproduces the
+   measurement; it renders the pages, because the explorer is a WASM application
+   that returns an identical shell for every hash and cannot be probed with
+   `curl`.
 2. **A privacy claim is unattributable by construction.** Independently of any
    indexer, a privacy-preserving transaction publishes no `program_id` and no
    `instruction_data`. Even a perfect explorer could show only that a privacy
@@ -78,11 +82,14 @@ Two independent facts, kept apart because conflating them weakens the second:
 
 ## Proving cost
 
-A privacy-preserving claim proves locally before submission; on Apple Silicon CPU
-this is about 2.5 minutes end to end (measured 153 s with `RISC0_DEV_MODE=0`,
-proving the chained guest plus the privacy circuit's composition being nearly all
-of it). Deployments sensitive to first-claim latency should prove in the
-background and submit when ready.
+A privacy-preserving claim proves locally before submission, and that takes
+minutes rather than seconds with `RISC0_DEV_MODE=0` — proving the chained guest
+plus the privacy circuit's composition of its receipt being nearly all of it. The
+exact figure is a property of the machine, not of the design, and moves
+substantially with contention, so `scripts/prove-one-claim.sh` prints the one it
+measured rather than this document quoting a number that would not reproduce.
+Deployments sensitive to first-claim latency should prove in the background and
+submit when ready.
 
 ## Set size and tree depth
 
@@ -91,27 +98,37 @@ folding cost grow with `log2(set size)`. The tree builder pads to a power of two
 with a domain-separated sentinel that commits to no account, so padding entries
 can never be claimed.
 
-## Deferred hardenings (non-exploitable, would re-key the deployment)
+## Deferred hardenings (non-exploitable)
 
 An adversarial review confirmed no bypass of the claim's security properties. The
-items below are defence-in-depth, none of them exploitable as built, and each one
-is deferred because it changes a guest ImageID: because a distribution PDA and a
-marker PDA are both derived from the verifier's program id, redeploying the
-verifier re-keys every committed distribution and invalidates the live claims.
-They are recorded here so the trade-off is explicit rather than hidden.
+items below are defence-in-depth and none is exploitable as built. Each changes a
+guest ImageID, and that is not free: a distribution PDA and a marker PDA are both
+derived from the verifier's program id, so redeploying the verifier re-keys every
+committed distribution and invalidates the live claims. They are recorded here so
+the trade-off is explicit rather than hidden.
+
+The migration to LEZ v0.2.4 forced that re-key anyway, which made it the moment to
+fold in the one hardening whose cost was otherwise the only thing deferring it:
+
+- ~~**Anchor check compares against `DEFAULT` rather than `self`.**~~ **Done.**
+  `claim` now requires the distribution PDA's owner to equal `self_program_id`,
+  rather than merely to be non-default. The weaker form was already safe — a PDA
+  address embeds the program id, so an address in this program's namespace can
+  only be owned by `DEFAULT` or by this program — but the guarantee now rests on
+  the check itself instead of on that derivation argument.
+  `a_distribution_owned_by_another_program_is_rejected` covers it. Run against the
+  pre-hardening binary that test fails — the attack is accepted there — which is
+  what makes it a test of this change rather than of the PDA derivation.
+
+Two remain, each for a reason of its own rather than for the re-key cost:
 
 - **Reject the public path in the verifier program.** The claim carries `nsk` in
   its witness and is safe only on the privacy path (see
   [`privacy-model.md`](privacy-model.md)). The program does not itself refuse a
-  public-path invocation; the tooling never issues one. Enforcing it in-program
-  (checking the caller against the privacy circuit id) would make the guarantee
-  structural instead of procedural.
-- **Anchor check compares against `DEFAULT` rather than `self`.** The claim
-  requires the distribution PDA to be non-default-owned; it does not additionally
-  assert the owner *is this verifier*. That is safe today because a PDA address
-  embeds the program id, so a `[distribution_id, root]` PDA in this program's
-  namespace can only be owned by `DEFAULT` or this program. The stricter check is
-  a belt-and-suspenders nicety.
+  public-path invocation; the tooling never issues one. The obvious in-guest test
+  does not work: `caller_program_id` is the default for a top-level instruction,
+  which a claim is on either path, so it does not separate them. Making this
+  structural needs a discriminator LEZ does not currently expose to the guest.
 - **Domain-separate internal Merkle nodes.** Leaves are prefixed
   (`ELIGIBILITY_LEAF_PREFIX`); internal nodes are a bare `SHA256(L || R)`. This is
   not exploitable because the guest always *recomputes* the leaf from the account,

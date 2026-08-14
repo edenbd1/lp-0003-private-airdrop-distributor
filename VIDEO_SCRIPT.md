@@ -11,14 +11,13 @@
 > annoncées sont les vraies. Si quelque chose ne sort pas comme écrit, arrête et
 > dis-le-moi plutôt que d'improviser.
 
-> **Le point délicat : l'explorer ne montre pas tout.** Son index est irrégulier
-> et rate certaines de nos transactions, même une `create_distribution` publique,
-> alors qu'elles sont toutes vivantes en RPC. Ça n'a rien à voir avec le design.
-> Séparément, une transaction privacy ne publie ni `program_id` ni
-> `instruction_data`, donc elle serait non-attribuable même avec un indexeur
-> parfait, et ça c'est le sujet de la soumission. On ne mélange pas les deux : on
-> lit la chaîne en RPC, plus fort qu'un explorer et qui ne peut pas t'afficher une
-> page vide en pleine caméra.
+> **Le point délicat : l'explorer est en retard sur le séquenceur.** Mesuré :
+> ~1 h 45 entre la confirmation en RPC et l'apparition sur l'explorer. Une
+> transaction fraîche y affiche donc "not found" alors qu'elle est bien sur la
+> chaîne — inutilisable en direct devant la caméra. Séparément, une transaction
+> privacy ne publie ni `program_id` ni `instruction_data`, donc elle reste
+> non-attribuable même une fois indexée, et ça c'est le sujet de la soumission. On
+> ne mélange pas les deux : on lit la chaîne en RPC, qui répond immédiatement.
 
 ---
 
@@ -42,12 +41,12 @@ ferme Slack/Discord/notifications, fenêtre terminal en plein écran.
 
 → **[Repo : edenbd1/lp-0003-private-airdrop-distributor](https://github.com/edenbd1/lp-0003-private-airdrop-distributor)**
 
-> **Pas d'onglet block explorer.** Deux raisons distinctes. Un, l'index de
-> l'explorer est irrégulier et rate certaines de nos transactions, même une
-> publique, donc une page "not found" en caméra ne prouverait rien. Deux, une
-> transaction privacy est non-attribuable par construction (ni `program_id` ni
-> `instruction_data`). On lit la chaîne en RPC à la place, à la scène 2 et à la
-> scène 3, qui est la source de vérité.
+> **Pas d'onglet block explorer.** Deux raisons distinctes. Un, l'explorer accuse
+> ~1 h 45 de retard sur le séquenceur, donc la preuve générée en direct à la
+> scène 3 n'y sera pas encore : une page "not found" en caméra ne prouverait rien.
+> Deux, une transaction privacy est non-attribuable par construction (ni
+> `program_id` ni `instruction_data`). On lit la chaîne en RPC à la place, aux
+> scènes 2 et 3, qui répond immédiatement et fait foi.
 
 ## Basecamp (pour la scène 4)
 
@@ -70,8 +69,8 @@ tar xzOf app/lp-0003-airdrop.lgx manifest.json > "$DST/manifest.json"
 **🎬 ACTION** :
 
 ```bash
-CLAIM_TX=d9236824835c9f6a986c3bc687c04e2c722ad0984009fb0a936767d3c584e13b \
-NULLIFIER=4920f6fc4e4c50597b45cef083126decfe432a1100815f16bcfb128b0dfcbef8 \
+CLAIM_TX=441ccd15e7b5eac388a0849481e95db409f1b6f23a202b6ee1a3ce37ae112c86 \
+NULLIFIER=3db769e851c291d82cb79d717f1256710bb67b06a50cc52bea3f4ae1fea32b99 \
 DISTRIBUTION_ID=b100000000000000000000000000000000000000000000000000000000000001 \
 ./scripts/verify-onchain-claim.sh
 ```
@@ -124,7 +123,7 @@ pendant que tu parles.
 
 **💬 SAY** :
 
-> "Ten adversarial tests on the claim logic — non-members, borrowed Merkle paths, invented roots, forged nullifiers, inflated allocations, redirected destinations — plus two that round-trip the tree builder at every set size, so twelve here. Ten more on the encrypted bundle. Then seven against the built verifier binary, run through the sequencer's own executor — same executor, same input order, same thirty-two megabyte session limit the chain applies. A rejection you see there is the rejection the chain performs."
+> "Ten adversarial tests on the claim logic — non-members, borrowed Merkle paths, invented roots, forged nullifiers, inflated allocations, redirected destinations — plus two that round-trip the tree builder at every set size, so twelve here. Ten more on the encrypted bundle. Then eight against the built verifier binary, run through the sequencer's own executor — same executor, same input order, same thirty-two megabyte session limit the chain applies. A rejection you see there is the rejection the chain performs."
 
 **🎬 ACTION** : Scrolle sur `== 4.` et `== 5.`
 
@@ -136,7 +135,7 @@ pendant que tu parles.
 
 **💬 SAY** :
 
-> "Measured compute cost: a claim is three hundred thirty-three thousand user cycles, one and a half percent of the public budget."
+> "Measured compute cost: a claim is three hundred eighteen thousand user cycles, one and a half percent of the public budget."
 
 **🎬 ACTION** : Scrolle sur `== 8. what an observer sees` — **ralentis ici**
 
@@ -166,19 +165,19 @@ PATH. `WALLET_BIN` + les home dirs sont nécessaires pour le `sync-private` avan
 claim (sinon le commitment est périmé et le claim est rejeté). Copier-coller, puis
 remplace juste les deux ids par tes comptes financé/autorisé :
 
-Le testnet public tourne **LEZ v0.2.2**, donc on utilise le wallet v0.2.2 et le
-spel **vendoré** (`vendor/spel`, porté à v0.2.2). Le claim signe avec un compte
+Le stack cible **LEZ v0.2.4**, donc on utilise le wallet v0.2.4 et le
+spel **vendoré** (`vendor/spel`, porté à v0.2.4). Le claim signe avec un compte
 privé jetable créé à la volée — pas de `CLAIMANT` à fournir. Prépare **avant de
 filmer** (hors caméra) un compte public financé via le faucet :
 
 ```bash
 export PATH="/Users/eden/data/ns.com/lp-0003/vendor/spel/target/release:$HOME/.cargo/bin:$HOME/.risc0/bin:$PATH"
-export WALLET_BIN=/Users/eden/logos/src/lez-v0.2.2/target/release/wallet
+export WALLET_BIN=/Users/eden/data/ns.com/lp-0002/_external/lez/target/release/wallet   # LEZ v0.2.4
 export SPEL_BIN=/Users/eden/data/ns.com/lp-0003/vendor/spel/target/release/spel
 export DYLD_FALLBACK_FRAMEWORK_PATH=/Library/Developer/CommandLineTools/Library/Frameworks
-export LEE_WALLET_HOME_DIR=~/.lez-v022-wallet NSSA_WALLET_HOME_DIR=~/.lez-v022-wallet
-mkdir -p ~/.lez-v022-wallet
-echo '{ "sequencers": [{ "sequencer_addr": "https://testnet.lez.logos.co" }], "seq_poll_timeout": "30s", "seq_tx_poll_max_blocks": 15, "seq_poll_max_retries": 10, "seq_block_poll_max_amount": 100, "calibration_limit": 100 }' > ~/.lez-v022-wallet/wallet_config.json
+export LEE_WALLET_HOME_DIR=~/.lez-wallet NSSA_WALLET_HOME_DIR=~/.lez-wallet
+mkdir -p ~/.lez-wallet
+echo '{ "sequencers": [{ "sequencer_addr": "https://testnet.lez.logos.co" }], "seq_poll_timeout": "30s", "seq_tx_poll_max_blocks": 15, "seq_poll_max_retries": 10, "seq_block_poll_max_amount": 100, "calibration_limit": 100 }' > ~/.lez-wallet/wallet_config.json
 "$WALLET_BIN" account new public                       # note l'account_id imprimé
 export SIGNER=<l_account_id_imprimé>
 "$WALLET_BIN" auth-transfer init --account-id "Public/$SIGNER"
@@ -193,12 +192,38 @@ Puis, caméra qui tourne, tu ne tapes que :
 
 **💬 SAY** (pendant que ça démarre) :
 
-> "This commits one fresh distribution, then proves and submits a single real claim against it. Watch the proving step — about two and a half minutes on this laptop, because it generates a real STARK, and the privacy circuit then recursively verifies the chained call inside it. Dev mode is off, so these are real proofs."
+> "This commits one fresh distribution, then proves and submits a single real claim against it. Watch the proving step. It takes minutes, not seconds, because it generates a real STARK, and the privacy circuit then recursively verifies the chained call inside it. Dev mode is off, so these are real proofs. The script times it and prints what it measured, so you get this machine's number rather than a claim."
 
-> **🎬 NOTE POST-PROD** : l'attente de proving (~2-3 min, ligne `proving locally...`)
-> doit être **accélérée en post** (×8 à ×16), MAIS le terminal reste visible et
-> continu — on ne coupe pas, on accélère, pour qu'il soit clair que rien n'est
-> truqué.
+> **🎬 NOTE POST-PROD** : l'attente de proving (plusieurs minutes, ligne
+> `proving locally...`) doit être **accélérée en post** (×8 à ×16), MAIS le
+> terminal reste visible et continu — on ne coupe pas, on accélère, pour qu'il
+> soit clair que rien n'est truqué.
+>
+> Ne jamais annoncer une durée à la voix : elle dépend de la machine et de la
+> charge, l'horloge à l'écran est la seule source. Une version précédente disait
+> « two and a half minutes » pendant que le terminal en affichait neuf.
+
+## Pendant que ça prouve — l'architecture
+
+La preuve prend plusieurs minutes de temps machine. Le brief demande au
+constructeur d'expliquer l'architecture et les décisions d'implémentation : c'est
+ici que ce contenu va, sinon la vidéo a deux minutes et demie de silence.
+
+**💬 SAY** :
+
+> "While that proves, let me explain what it is actually doing, because the architecture is the submission. The first thing I checked on LEZ was whether a public transaction verifies a proof. It does not. The sequencer re-executes the program host-side, in a function whose own comment says execute the program, without proving. Anything built there would be a membership check wearing a zero-knowledge costume, and that is the ground earlier submissions in this programme were rejected on."
+
+**💬 SAY** :
+
+> "The path that works is the privacy-preserving transaction. The client proves locally, LEZ's privacy circuit composes each chained call with a real env verify over the callee's program output, and the sequencer then checks the resulting receipt against a circuit id pinned in the node. For that composition to happen, the thing being proved has to be a LEZ program itself, emitting a program output. That is why the claim circuit exists in the shape it does, rather than as a plain guest I verify myself, off chain, and ask you to trust."
+
+**💬 SAY** :
+
+> "The second decision is anchoring. A membership proof establishes membership against whatever root the statement names, which on its own is worthless: anyone can build a one-leaf tree holding themselves. So the root is anchored by address. Create distribution initialises an account whose address derives from the distribution id and the root, and claim requires that account to be owned by this verifier. An invented root resolves to an address nobody ever created, and the claim is rejected before the program body runs."
+
+**💬 SAY** :
+
+> "The third is the nullifier. Each claim occupies a marker account seeded by a hash of the distribution and a secret only the recipient holds. Because it commits to that secret, an observer who knows every eligible address still cannot compute it, so the marker cannot be mapped back to anyone. And because the account is created with init, a second claim by the same recipient targets an address that is already taken, and fails on chain. One recipient, one claim, and no identity revealed."
 
 **🎬 ACTION** : Le script imprime `proved + submitted in NNNs`, attend
 l'atterrissage, puis lance lui-même la vérification cinq-sur-cinq. Laisse-la
@@ -206,7 +231,7 @@ s'afficher jusqu'à `VERIFIED`.
 
 **💬 SAY** (quand le `VERIFIED` apparaît) :
 
-> "There it is. A real proof, dev mode off, submitted on the privacy path, and the script reads it straight back off the chain: a Succinct STARK the sequencer verified, and the marker owned by the verifier. Two quick notes on the explorer. It does not show this transaction, but that is the explorer's index, not the chain: it also misses one of our public transactions, and the R-P-C returns all of them. And separately, a privacy transaction publishes no program id and no instruction data, so it is unattributable by design. That is why verification reads the chain directly."
+> "There it is. A real proof, dev mode off, submitted on the privacy path, and the script reads it straight back off the chain: a Succinct STARK the sequencer verified, and the marker owned by the verifier. One note on the explorer. This claim landed seconds ago, and the explorer runs about an hour and three quarters behind the sequencer — I measured it — so it will not have this hash yet. The R-P-C has it immediately, which is why verification reads the chain directly. And once the explorer does catch up, what it shows is the transaction type, the proof size, and the marker address. No program id, no instruction data, nothing that names a distribution or an address. The privacy property, rendered by a third party."
 
 ---
 
@@ -240,7 +265,7 @@ tar xzf app/lp-0003-airdrop.lgx -C /tmp/pkg && /tmp/pkg/variants/darwin-arm64/ai
 
 **💬 SAY** :
 
-> "To summarize. Two programs deployed on the public L-E-Z testnet, byte-identical to what's in the repository — you can check that from the deployment transaction hash. Three distributions committed, and twenty-three privacy-preserving claims landed and independently verifiable. Documented compute cost, a SPEL I-D-L, the Basecamp app you just saw loading and running, a demo script that runs from a clean clone, and green C-I with the adversarial tests running against the deployed binary on every push."
+> "To summarize. Two programs deployed on the public L-E-Z testnet, byte-identical to what's in the repository — you can check that from the deployment transaction hash. Two distributions committed, and twenty-three privacy-preserving claims landed and independently verifiable. Documented compute cost, a SPEL I-D-L, the Basecamp app you just saw loading and running, a demo script that runs from a clean clone, and green C-I with the adversarial tests running against the deployed binary on every push."
 
 **💬 SAY** :
 

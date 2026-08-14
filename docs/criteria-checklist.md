@@ -36,7 +36,7 @@ satisfies it. Codes: ✅ done, 🔧 scripted and reproducible, pending a live ru
 
 | Criterion | Evidence |
 |---|---|
-| CU cost of each on-chain operation | ✅ measured by replaying the sequencer's execution: `claim` is 333,565 user cycles / 524,288 proving cycles, i.e. 1.56% of the 33,554,432 execution budget. `docs/benchmarks/cu-budget.md`, reproduced by `claim-verifier-tests`. |
+| CU cost of each on-chain operation | ✅ measured by replaying the sequencer's execution: `claim` is 318,242 user cycles / 524,288 proving cycles, i.e. 1.56% of the 33,554,432 execution budget. `docs/benchmarks/cu-budget.md`, reproduced by `claim-verifier-tests`. |
 
 ## Supportability
 

@@ -1832,7 +1832,7 @@ dependencies = [
 [[package]]
 name = "lee_core"
 version = "0.1.0"
-source = "git+https://github.com/logos-blockchain/logos-execution-zone.git?rev=d6e4ae694e7419f5906b340c232704466a1917b7#d6e4ae694e7419f5906b340c232704466a1917b7"
+source = "git+https://github.com/logos-blockchain/logos-execution-zone.git?rev=47eba256479f6f785acbd138834340703cd03401#47eba256479f6f785acbd138834340703cd03401"
 dependencies = [
  "base58",
  "borsh",

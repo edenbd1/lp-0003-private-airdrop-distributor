@@ -17,7 +17,7 @@ path = "src/bin/claim_lez.rs"
 [dependencies]
 risc0-zkvm = { version = "=3.0.5", default-features = false, features = ["std"] }
 airdrop-core = { path = "../../../airdrop-core", default-features = false }
-lee_core = { git = "https://github.com/logos-blockchain/logos-execution-zone.git", rev = "d6e4ae694e7419f5906b340c232704466a1917b7", default-features = false }
+lee_core = { git = "https://github.com/logos-blockchain/logos-execution-zone.git", rev = "47eba256479f6f785acbd138834340703cd03401", default-features = false }
 serde = { version = "1", default-features = false, features = ["derive", "alloc"] }
 sha2 = { version = "0.10", default-features = false }
 ruint = { version = "=1.17.2", default-features = false }

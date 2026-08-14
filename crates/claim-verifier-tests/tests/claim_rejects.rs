@@ -2,7 +2,7 @@
 //!
 //! These tests run the committed `claim_verifier.bin` through the *sequencer's
 //! own* execution path (same input order, same 32M session limit, same executor,
-//! `lee/state_machine/src/program.rs:55-110`), so a rejection here is the same
+//! `lee/state_machine/src/program/mod.rs:55-110`), so a rejection here is the same
 //! rejection the chain performs. They deliberately do not prove: proving costs
 //! minutes and would establish nothing extra about which inputs are accepted.
 //!
@@ -327,6 +327,37 @@ fn an_unanchored_root_is_rejected() {
     let mut s = Scenario::honest(&pid);
     s.distribution_owner = ProgramId::default(); // never created on chain
     let err = s.run(&elf, &pid).expect_err("an invented root must be rejected");
+    let msg = format!("{err:#}");
+    assert!(
+        msg.contains("4003") || msg.to_lowercase().contains("anchor"),
+        "expected the not-anchored rejection, got: {msg}"
+    );
+}
+
+/// The distribution PDA exists and is initialised, but by some *other* program.
+///
+/// This is the case that separates the anchor check from its weaker form. The
+/// pre-hardening build asked only that the owner not be the default, which this
+/// scenario satisfies, so it accepted the claim and this test fails against it —
+/// checked, not assumed. The check now requires the owner to be this verifier.
+///
+/// The attack is not reachable in practice: a PDA address embeds the program id,
+/// so an address in this program's namespace cannot be owned by a third program.
+/// The point is that the guarantee now rests on the check rather than on that
+/// derivation argument continuing to hold.
+#[test]
+fn a_distribution_owned_by_another_program_is_rejected() {
+    let elf = elf();
+    let pid = program_id(&elf);
+    let mut s = Scenario::honest(&pid);
+    let mut foreign = pid;
+    foreign[0] ^= 0xFFFF_FFFF; // initialised, non-default, and not this verifier
+    assert_ne!(foreign, pid);
+    assert_ne!(foreign, ProgramId::default());
+    s.distribution_owner = foreign;
+    let err = s
+        .run(&elf, &pid)
+        .expect_err("a distribution owned by another program must be rejected");
     let msg = format!("{err:#}");
     assert!(
         msg.contains("4003") || msg.to_lowercase().contains("anchor"),

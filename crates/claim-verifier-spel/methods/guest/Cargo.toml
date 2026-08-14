@@ -20,7 +20,7 @@ path = "src/bin/claim_verifier.rs"
 spel-framework = { path = "../../../../vendor/spel/spel-framework" }
 # spel-framework's macro emits `nssa_core::` paths, so lee_core must be in scope
 # under that name. Same aliasing spel itself uses.
-nssa_core      = { git = "https://github.com/logos-blockchain/logos-execution-zone.git", rev = "d6e4ae694e7419f5906b340c232704466a1917b7", features = ["host"], package = "lee_core" }
+nssa_core      = { git = "https://github.com/logos-blockchain/logos-execution-zone.git", rev = "47eba256479f6f785acbd138834340703cd03401", features = ["host"], package = "lee_core" }
 risc0-zkvm     = { version = "=3.0.5", default-features = false, features = ["std"] }
 
 airdrop-core = { path = "../../../airdrop-core", default-features = false }

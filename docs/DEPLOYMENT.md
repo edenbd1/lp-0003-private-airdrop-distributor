@@ -3,14 +3,15 @@
 Every transaction below is live on the public Logos Execution Zone testnet.
 "Live" here means `getTransaction` over JSON-RPC returns a non-null result; see
 [What the explorer shows](#what-the-explorer-shows-and-what-it-does-not) for how
-that relates to the block explorer, which is a separate, and irregular, index.
+that relates to the block explorer, a separate index that reaches a transaction
+about two hours after the RPC does.
 
 ```
 Network:            Public LEZ testnet
 Sequencer JSON-RPC: https://testnet.lez.logos.co
 Block explorer:     https://explorer.testnet.lez.logos.co
-LEZ version:        v0.2.2 (commit d6e4ae6)
-spel:               v0.6.0
+LEZ version:        v0.2.4 (commit 47eba25)
+spel:               v0.6.0 sources, repinned and ported to v0.2.4 (vendor/spel)
 cargo-risczero:     3.0.5
 ```
 
@@ -23,26 +24,26 @@ transactions, which is what `scripts/verify-onchain-claim.sh` step 1 checks.
 
 | Program | ImageID | Deploy tx | On the explorer |
 |---|---|---|---|
-| Claim program (LEZ-native, `claim_lez.bin`) | `8faaa67c…b48c79c0` | `4a8dab27…8c5fdf59` | [displays](https://explorer.testnet.lez.logos.co/transaction/4a8dab271c2ac4f3b19c38b45e3f05fa4f413a0ac84a7b28030abebc8c5fdf59) |
-| Claim verifier (SPEL, `claim_verifier.bin`) | `51a07a8b…77e8e4ab` | `90f615d4…a22defe7` | [displays](https://explorer.testnet.lez.logos.co/transaction/90f615d4045db10c2e42c44d15bf80f36a7a72e31df51e3bda6c46e4a22defe7) |
+| Claim program (LEZ-native, `claim_lez.bin`) | `e9843420…67b57449` | `59c2160b…cbbea7c5` | [link](https://explorer.testnet.lez.logos.co/transaction/59c2160b40c5d0f4cce01fd89e7755dbafd9c7d088a071d6f6fd3a10cbbea7c5) |
+| Claim verifier (SPEL, `claim_verifier.bin`) | `31edc17c…a110385d` | `7b16e471…7092e34c` | [link](https://explorer.testnet.lez.logos.co/transaction/7b16e471b35ce8c718e066d80a8198f8831ebc7b6704583ddd28bb287092e34c) |
 
 ## Distributions and claims
 
 Two distributions are committed on chain under the **current** verifier
-(ImageID `51a07a8b…`) with `create_distribution`; each commits only its
+(ImageID `31edc17c…`) with `create_distribution`; each commits only its
 eligibility root, in a PDA whose address is `[distribution_id, root]` derived
 from the verifier's own program id.
 
 | Distribution | id | recipients | eligibility root |
 |---|---|---|---|
-| 1 | `b1…0001` | 12 | `87f8333b…8f99eaf4` |
-| 2 | `b2…0002` | 11 | `676250fb…63afb678` |
+| 1 | `b1…0001` | 12 | `e48c5f4f…ea6a45bcc` |
+| 2 | `b2…0002` | 11 | `7b5078e8…9ed4eb44a` |
 
-> This deployment is on **LEZ v0.2.2** (commit `d6e4ae6`), the version the public
-> testnet runs after its 2026-08-05 reset and upgrade from v0.2.0. Any earlier
-> v0.2.0 deployment and its claims no longer exist on the reset chain (the privacy
-> circuit id changed, so v0.2.0 proofs no longer verify), which is why these
-> addresses differ from earlier write-ups.
+> This deployment is on **LEZ v0.2.4** (commit `47eba25`). Both guests are built
+> against it, and a guest's ImageID depends on the pinned revision, so the
+> ImageIDs — and with them the content-addressed deploy transactions, and every
+> PDA derived from the verifier's program id — differ from any earlier v0.2.0 or
+> v0.2.2 write-up. Earlier deployments and their claims are superseded.
 
 The full list of live claims across these two distributions is committed at
 [`artifacts/e2e/claims.tsv`](../artifacts/e2e/claims.tsv) as
@@ -57,9 +58,9 @@ proof:
 
 ```
 distribution:        b1…0001
-claim tx (privacy):  d9236824835c9f6a986c3bc687c04e2c722ad0984009fb0a936767d3c584e13b   (live via RPC)
-nullifier:           4920f6fc4e4c50597b45cef083126decfe432a1100815f16bcfb128b0dfcbef8   (a commitment, not a transaction)
-claim marker PDA:    7SXfaAhXw9jSGmdgNZ1f6z1p16UL8MbbSNtkPEhQBYQ9  (owned by the verifier)
+claim tx (privacy):  441ccd15e7b5eac388a0849481e95db409f1b6f23a202b6ee1a3ce37ae112c86   (live via RPC)
+nullifier:           3db769e851c291d82cb79d717f1256710bb67b06a50cc52bea3f4ae1fea32b99   (a commitment, not a transaction)
+claim marker PDA:    B4VTZUENS1Ckmaiv8h44QcU5r276pEgTE2nEwGSGsf16  (owned by the verifier)
 ```
 
 The `nullifier` is a commitment used to seed the marker PDA; it is **not** a
@@ -68,8 +69,8 @@ transaction hash, so `getTransaction` returns null on it, which is expected.
 Verify the claim from public data over RPC:
 
 ```bash
-CLAIM_TX=d9236824835c9f6a986c3bc687c04e2c722ad0984009fb0a936767d3c584e13b \
-NULLIFIER=4920f6fc4e4c50597b45cef083126decfe432a1100815f16bcfb128b0dfcbef8 \
+CLAIM_TX=441ccd15e7b5eac388a0849481e95db409f1b6f23a202b6ee1a3ce37ae112c86 \
+NULLIFIER=3db769e851c291d82cb79d717f1256710bb67b06a50cc52bea3f4ae1fea32b99 \
 DISTRIBUTION_ID=b100000000000000000000000000000000000000000000000000000000000001 \
 ./scripts/verify-onchain-claim.sh
 ```
@@ -88,10 +89,10 @@ ownership is the thing no block explorer can show or forge, and it is what
 
 ## What the explorer shows, and what it does not
 
-A reviewer's first instinct is to paste a hash into the block explorer, and some
-of these transactions do not display there. The source of truth here is the
-sequencer's JSON-RPC, not the explorer, so this is stated up front with a control
-anyone can reproduce.
+A reviewer's first instinct is to paste a hash into the block explorer. The
+explorer gets there eventually, but the sequencer's JSON-RPC is immediate and is
+the source of truth, so this is stated up front with a control anyone can
+reproduce.
 
 `getTransaction` over RPC returns a non-null result for every live transaction in
 this submission (the two deploys, both `create_distribution` transactions, and all
@@ -104,30 +105,49 @@ chain has no such hash, not that a transaction is "empty":
 # non-null "result" = present on chain; null = absent.
 # The deploy returns a base64 result; the impossible dede…de hash returns null.
 curl -s -X POST https://testnet.lez.logos.co -H 'Content-Type: application/json' \
-  -d '{"jsonrpc":"2.0","id":1,"method":"getTransaction","params":["4a8dab271c2ac4f3b19c38b45e3f05fa4f413a0ac84a7b28030abebc8c5fdf59"]}'
+  -d '{"jsonrpc":"2.0","id":1,"method":"getTransaction","params":["59c2160b40c5d0f4cce01fd89e7755dbafd9c7d088a071d6f6fd3a10cbbea7c5"]}'
 ```
 
-The block explorer at `explorer.testnet.lez.logos.co` is a **separate index** and
-does not hold every transaction the sequencer does, so some of these transactions
-display there and some do not. "The explorer does not show this hash" is therefore
-not evidence the transaction is missing; the RPC, which is the source of truth,
-holds it. This indexer gap is a Logos limitation unrelated to the design, reported
-upstream at `logos-blockchain/lez-explorer-ui#15`.
+The block explorer at `explorer.testnet.lez.logos.co` is a **separate index**, and
+it lags the sequencer. Measuring that needs care: the explorer is a WASM
+application that returns the same shell for every `/transaction/<hash>` URL and
+fetches its content client-side, so an indexed transaction and a hash that cannot
+exist are byte-identical over `curl`, and a size comparison proves nothing.
+`scripts/check-explorer.py` therefore renders each page in a headless browser and
+compares it against the impossible hash as a control.
 
-### A claim may not display for two separate reasons
+### It indexes these transactions, but not immediately
 
-These are independent and should not be conflated:
+Measured on this deployment: the claim program's deploy, confirmed on chain at
+02:15, was still absent from the explorer at 03:51 and present at 04:07. Every
+claim sampled from the previous run's manifest is indexed. So "the explorer says
+Transaction not found" on a freshly submitted hash means *not indexed yet*, not
+missing — and `getTransaction` over RPC is the immediate, authoritative answer.
 
-1. **The indexer gap above.** The explorer does not index every hash the sequencer
-   holds; a public transaction can be absent from it too. This has nothing to do
-   with the privacy design.
-2. **Privacy by construction.** Independently of any indexer, a
-   privacy-preserving transaction publishes no `program_id` and no
-   `instruction_data`. So even a perfect indexer could show only that *a* privacy
-   transaction occurred, never which distribution or which address it concerns.
-   That unattributability is the point of this submission, and it is what
-   `verify-onchain-claim.sh` establishes from the marker PDA rather than from any
-   explorer.
+### What it shows for a claim is the privacy property itself
+
+Once indexed, a claim renders like this:
+
+```
+Type: Privacy-Preserving Transaction
+Public Accounts: 2    Private Actions: 7    Proof Size: 260947 bytes
+Public Accounts: B4VTZUENS1Ckmaiv8h44QcU5r276pEgTE2nEwGSGsf16
+```
+
+No `program_id`, no `instruction_data`, no distribution id, no recipient address —
+only the marker PDA. That is a third party's public rendering of exactly what this
+submission claims: an observer can see that *a* privacy transaction occurred and
+that it carries a real proof, and can see the marker it claimed, but cannot tell
+which distribution it concerns or whose address is behind it. A public deployment
+transaction, by contrast, renders its bytecode size, because nothing about it is
+private.
+
+Reproduce either result:
+
+```bash
+./scripts/check-explorer.py                    # the deploys and a sample of claims
+./scripts/check-explorer.py <hash> [<hash>...] # any hashes
+```
 
 ## If the testnet is reset
 

@@ -62,7 +62,7 @@ An observer does **not** learn:
   unlinkability property.
 - The recipient's `nsk`, salt, or Merkle path: a privacy `Message` publishes
   neither `program_id` nor `instruction_data`
-  (`privacy_preserving_transaction/message.rs:14-24`), and the witness travels
+  (`privacy_preserving_transaction/message.rs:14-27`), and the witness travels
   only in the instruction, only on that path.
 
 > **A claim must be submitted on the privacy path.** The witness carries the
@@ -74,8 +74,9 @@ An observer does **not** learn:
 > leak the secret. The claim tooling (`airdrop` CLI, `deploy-and-claim.sh`) always
 > submits on the privacy path. The verifier program does not *itself* reject the
 > public path today; doing so in-program is a listed hardening in
-> [`limitations.md`](limitations.md), deferred because it changes the verifier
-> ImageID and would re-key every committed distribution.
+> [`limitations.md`](limitations.md), still open because LEZ exposes the guest no
+> value that separates the two paths — `caller_program_id` is the default for a
+> top-level instruction, which a claim is on either one.
 
 ## What the integrator can rely on
 
