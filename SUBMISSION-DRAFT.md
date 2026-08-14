@@ -26,7 +26,7 @@ re-checks any one of them over JSON-RPC.
 ## Repository
 
 - **Repo:** <https://github.com/edenbd1/lp-0003-private-airdrop-distributor> — dual-licensed MIT OR Apache-2.0
-- **Narrated demo video:** <https://youtu.be/mI33jjqxlZE>
+- **Narrated demo video:** <https://youtu.be/rtCGv0zqC4I>
 - **Solution write-up:** this document
 - **Deployment + how to re-verify:** [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md)
 - **Basecamp app:** `app/lp-0003-airdrop.lgx` (SHA-256 `cd999028b4461539880c19f755c1ab2fe667c2c2c2e1c03dbd6419c154b08955`), with both `darwin-arm64` and `linux-amd64` variants
@@ -313,10 +313,12 @@ downstream on the marker PDA owned by the verifier, checked as in
 - [x] **CI green on the default branch.**
 - [x] **README documents end-to-end usage**, and `./scripts/demo.sh` runs from a
       clean clone with `RISC0_DEV_MODE=0`, no funded account needed.
-- [x] **Recorded narrated video demo.** <https://youtu.be/mI33jjqxlZE> — the
+- [x] **Recorded narrated video demo.** <https://youtu.be/rtCGv0zqC4I> — the
       terminal is on screen throughout, `RISC0_DEV_MODE=0` is visible before any
       proving starts, and the claim is proved and submitted to the public testnet
-      during the recording, in one uninterrupted take.
+      during the recording. It is a single take, and nothing is cut out: the
+      stretch where the proof runs and nothing on screen changes is played at
+      eight times speed, and the on-screen clock reports the real elapsed time.
 
 ## FURPS Self-Assessment
 
@@ -378,7 +380,7 @@ the anchoring check, with a case that a weaker form of it would let through.
 - [`docs/benchmarks/cu-budget.md`](docs/benchmarks/cu-budget.md)
 - [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) — every tx hash and how to re-verify
 - [`docs/onchain-audit.md`](docs/onchain-audit.md) — live adversarial demos
-- Narrated demo video: <https://youtu.be/mI33jjqxlZE>
+- Narrated demo video: <https://youtu.be/rtCGv0zqC4I>
 
 ## What the testnet run taught, and what it cost
 

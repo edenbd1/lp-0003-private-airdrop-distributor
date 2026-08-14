@@ -47,4 +47,4 @@ satisfies it. Codes: ✅ done, 🔧 scripted and reproducible, pending a live ru
 | CI green on the default branch | ✅ `.github/workflows/ci.yml`. |
 | README documents end-to-end usage | ✅ `README.md`, `docs/DEPLOYMENT.md`. |
 | Reproducible end-to-end demo, `RISC0_DEV_MODE=0` | ✅ `scripts/e2e-local-sequencer.sh` reproduces the whole flow from nothing — it spins up its own sequencer, so it needs no funded account or public testnet — and was run to a green `VERIFIED`. `scripts/deploy-and-claim.sh` is the same flow against the public testnet (needs a funded account). |
-| Recorded video demo | 🔧 not yet recorded; script and PDF ready at `VIDEO_SCRIPT.md`, to show `RISC0_DEV_MODE=0` and real proof generation. |
+| Recorded video demo | ✅ <https://youtu.be/rtCGv0zqC4I> — ten minutes, `RISC0_DEV_MODE=0` throughout, with a real proof generated during the recording and then verified against the deployed programs on chain. |
