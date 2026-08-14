@@ -73,6 +73,11 @@ which confirms the transaction is `PrivacyPreserving`, its receipt is a `Succinc
 STARK the sequencer verified, and the claim marker PDA is owned by the verifier:
 the membership proof was verified on chain as a precondition of acceptance.
 
+Of the three values above only `CLAIM_TX` is a transaction. The nullifier is a
+commitment that seeds the marker address, and the distribution id is an
+identifier, so `getTransaction` returns `null` on both — expected, not a dead
+link.
+
 > This deployment targets **LEZ v0.2.4** (commit `47eba25`). Both programs are
 > built against it, which is why these ImageIDs differ from any earlier v0.2.0 or
 > v0.2.2 write-up, and why the deploy transactions differ with them: a deploy hash
