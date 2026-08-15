@@ -109,12 +109,34 @@ curl -s -X POST https://testnet.lez.logos.co -H 'Content-Type: application/json'
 ```
 
 The block explorer at `explorer.testnet.lez.logos.co` is a **separate index**, and
-it lags the sequencer. Measuring that needs care: the explorer is a WASM
-application that returns the same shell for every `/transaction/<hash>` URL and
-fetches its content client-side, so an indexed transaction and a hash that cannot
-exist are byte-identical over `curl`, and a size comparison proves nothing.
-`scripts/check-explorer.py` therefore renders each page in a headless browser and
-compares it against the impossible hash as a control.
+it lags the sequencer.
+
+**A correction, because this document said otherwise.** It used to state that the
+explorer was a WASM application returning the same shell for every
+`/transaction/<hash>` URL and fetching its content client-side, so that an
+indexed transaction and a hash that cannot exist were byte-identical over `curl`.
+That was true when `scripts/check-explorer.py` was written — it is why the script
+drives a browser at all — and it is not true now. Re-measured **2026-08-15**, the
+explorer server-side renders, so `curl` does separate the two cases:
+
+```bash
+# a claim: ~366 kB, and the body carries Type: and Proof Size:
+curl -s https://explorer.testnet.lez.logos.co/transaction/441ccd15e7b5eac388a0849481e95db409f1b6f23a202b6ee1a3ce37ae112c86 | wc -c
+
+# a hash that cannot exist: 2416 bytes, and the body says why
+curl -s "https://explorer.testnet.lez.logos.co/transaction/$(python3 -c 'print("de"*32)')" | wc -c
+```
+
+The second returns `Failed to load transaction: error running server function:
+Transaction not found`. Compare the bodies rather than only the sizes — a size is
+a weaker signal that happens to work today.
+
+`scripts/check-explorer.py` remains the stronger check and is worth running as a
+second opinion: it renders each page headless and compares it against that same
+impossible hash as a control, so it reads the DOM a reviewer actually sees, and it
+keeps working if the explorer returns to client-side rendering. If the control
+ever renders as a *found* transaction the script aborts rather than report
+anything, because the baseline every verdict rests on would be invalid.
 
 ### It indexes these transactions, but not immediately
 
