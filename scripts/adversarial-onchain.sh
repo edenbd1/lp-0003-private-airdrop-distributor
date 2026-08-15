@@ -22,6 +22,16 @@
 # Attacks 1 and 2 run against a FRESH distribution whose marker is still unspent,
 # so nothing but the tampering can be responsible for the rejection. Attack 3
 # reuses a claim from the committed run, whose marker is already taken.
+#
+# Attack 3 therefore needs an args file whose marker PDA is already on chain.
+# That file carries a recipient secret, so it is gitignored and a clean clone
+# does not have one: run scripts/deploy-and-claim.sh first, or set SPENT_ARGS.
+# Without it this script runs 2 of 3 and exits 2 (INCOMPLETE) — the summary is
+# computed from what actually ran, so no run can report three having done two.
+#
+# Exit status: 0 all three attacks ran and were rejected; 1 an attack was not
+# rejected (or was rejected for the wrong reason); 2 an attack could not run,
+# including because a dependency below is missing.
 set -uo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"; cd "$ROOT"
 export RISC0_DEV_MODE=0
@@ -39,24 +49,52 @@ SPENT_ARGS="${SPENT_ARGS:-artifacts/e2e/dist1/claim_0.args}"
 DIR=.demo-adversarial
 rm -rf "$DIR"
 
+# Preflight, before anything is submitted. If wallet or spel is missing, every
+# submission below fails with "No such file or directory", which reads as an
+# attack that was not rejected — the loudest possible false negative, and one
+# produced entirely by this machine. Name the tool instead.
+MISSING=""
+for tool in cargo python3 "$WALLET" "$SPEL"; do
+  command -v "$tool" >/dev/null 2>&1 || MISSING="$MISSING $tool"
+done
+if [ -n "$MISSING" ]; then
+  printf '\033[31mMISSING DEPENDENCY:\033[0m%s\n' "$MISSING" >&2
+  echo "This script needs cargo, python3, the v0.2.4 wallet (WALLET_BIN) and the" >&2
+  echo "vendored spel (SPEL_BIN). Nothing was submitted, so this says nothing about" >&2
+  echo "what the deployed programs accept." >&2
+  exit 2
+fi
+
 rule() { printf '\n\033[1m== %s\033[0m\n' "$1"; }
 FAILED=0
+# The final verdict is COMPUTED from these three slots, never asserted. Each
+# starts "notrun" and only a submission that actually happened moves it, so a run
+# that skipped an attack cannot print a three-attack verdict. (A submission in
+# this programme was closed for reporting success from a job that had taken its
+# explicit skip path; a summary must not be able to outrun its evidence.)
+LABEL_1="membership, tampered Merkle path"
+LABEL_2="destination redirect"
+LABEL_3="double claim, marker already on chain"
+STATUS_1=notrun; STATUS_2=notrun; STATUS_3=notrun
+WHY_1=""; WHY_2=""; WHY_3=""
+
 # An attack "passes" when the submission fails with the expected panic. A tx hash
 # means the attack got through, which is the one outcome that must fail this run.
-expect_panic() { # label expected-substring output
-  local label="$1" want="$2" out="$3"
+expect_panic() { # slot label expected-substring output
+  local slot="$1" label="$2" want="$3" out="$4"
   if echo "$out" | grep -q 'tx_hash: [0-9a-f]\{64\}'; then
     printf '  \033[31mFAIL\033[0m %s produced a transaction — the attack was NOT rejected\n' "$label"
-    FAILED=1; return
+    printf -v "STATUS_$slot" 'failed'; FAILED=1; return
   fi
   if echo "$out" | grep -qF "$want"; then
     printf '  \033[32mOK\033[0m   %s rejected with %s\n' "$label" "$want"
     echo "$out" | grep -E 'panicked at|claim is not valid|account validation failed|ProgramProveFailed' \
       | head -3 | sed 's/^/       /'
+    printf -v "STATUS_$slot" 'ok'
   else
     printf '  \033[31mFAIL\033[0m %s did not produce the expected %s\n' "$label" "$want"
     echo "$out" | tail -6 | sed 's/^/       /'
-    FAILED=1
+    printf -v "STATUS_$slot" 'failed'; FAILED=1
   fi
 }
 
@@ -112,7 +150,7 @@ open(sys.argv[2], "w").write(
     src[:m.start(1)] + ",".join(map(str, w)) + src[m.end(1):])
 print(f"   flipped one bit of the first Merkle sibling (word 73), path depth {w[72]}")
 PY
-expect_panic "tampered Merkle path" "NotEligible" "$(submit "$DIR/attack1.args")"
+expect_panic 1 "tampered Merkle path" "NotEligible" "$(submit "$DIR/attack1.args")"
 
 rule "2. the destination cannot be redirected"
 python3 - "$DIR/claim_1.args" "$DIR/attack2.args" <<'PY'
@@ -125,22 +163,50 @@ redirect = ("de" * 32)
 open(sys.argv[2], "w").write(src[:m.start(1)] + redirect + src[m.end(1):])
 print(f"   enforced destination {orig[:16]}… -> {redirect[:16]}… (witness unchanged)")
 PY
-expect_panic "redirected destination" "DestinationMismatch" "$(submit "$DIR/attack2.args")"
+expect_panic 2 "redirected destination" "DestinationMismatch" "$(submit "$DIR/attack2.args")"
 
 rule "3. a second claim by the same recipient is rejected"
 if [ ! -f "$SPENT_ARGS" ]; then
-  echo "  SKIP: no spent claim at $SPENT_ARGS (run scripts/deploy-and-claim.sh first,"
-  echo "        or set SPENT_ARGS to an args file whose marker is already on chain)"
+  WHY_3="no spent claim at $SPENT_ARGS"
+  echo "  NOT RUN: $WHY_3."
+  echo "  This attack needs an args file whose marker PDA is already on chain. Such a"
+  echo "  file carries a recipient secret, so it is gitignored and a clean clone has"
+  echo "  none: run scripts/deploy-and-claim.sh first, or set SPENT_ARGS to an args"
+  echo "  file whose marker is already on chain."
+  echo "  (The protection itself is not in doubt here, only this run's coverage of it:"
+  echo "   the double-claim rejection is exercised on every push by"
+  echo "   'cargo test -p claim-verifier-tests' against the committed verifier binary,"
+  echo "   and docs/onchain-audit.md §3 carries the live testnet transcript.)"
 else
   echo "resubmitting $SPENT_ARGS, whose marker PDA is already on chain"
-  expect_panic "double claim" "AccountAlreadyInitialized" "$(submit "$SPENT_ARGS")"
+  expect_panic 3 "double claim" "AccountAlreadyInitialized" "$(submit "$SPENT_ARGS")"
 fi
 
 echo
-if [ "$FAILED" -eq 0 ]; then
-  echo "All three attacks were rejected at proof-generation time; none reached a block."
-  exit 0
-else
+rule "summary"
+RAN=0
+for slot in 1 2 3; do
+  s="STATUS_$slot"; l="LABEL_$slot"; w="WHY_$slot"
+  case "${!s}" in
+    ok)     printf '  \033[32mok\033[0m       %s. %s — rejected, no transaction\n' "$slot" "${!l}"
+            RAN=$((RAN + 1)) ;;
+    failed) printf '  \033[31mFAILED\033[0m   %s. %s — NOT rejected as expected\n' "$slot" "${!l}"
+            RAN=$((RAN + 1)) ;;
+    *)      printf '  \033[33mNOT RUN\033[0m  %s. %s — %s\n' "$slot" "${!l}" "${!w:-not attempted}" ;;
+  esac
+done
+printf '\n%s of 3 attacks ran.\n' "$RAN"
+
+if [ "$FAILED" -ne 0 ]; then
   echo "AN ATTACK WAS NOT REJECTED — see above." >&2
   exit 1
+elif [ "$RAN" -ne 3 ]; then
+  echo "INCOMPLETE: this run performed $RAN of the 3 attacks, so it does not establish" >&2
+  echo "the three-attack claim in docs/onchain-audit.md. The $RAN that ran were rejected" >&2
+  echo "at proof-generation time and reached no block. Supply what the attack above" >&2
+  echo "needs and re-run." >&2
+  exit 2
+else
+  echo "All three attacks were rejected at proof-generation time; none reached a block."
+  exit 0
 fi

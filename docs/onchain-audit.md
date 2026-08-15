@@ -11,7 +11,10 @@ claim ever reaches a block.
 
 They are not a one-off transcript: `scripts/adversarial-onchain.sh` re-runs all
 three against whatever is deployed, and fails if any of them produces a
-transaction instead of the rejection below.
+transaction instead of the rejection below. Attacks 1 and 2 are self-contained;
+attack 3 needs a claim whose marker PDA is already on chain, which a clean clone
+does not have (see [Reproduce](#reproduce)). The script counts what it actually
+ran and exits 2 rather than claiming three when it performed two.
 
 ## 1. Membership is genuinely verified on chain, the chained call is not inert
 
@@ -73,7 +76,12 @@ validation, not `claim_lez`.
 ## Reproduce
 
 ```bash
+# attacks 1 and 2 only; exits 2 (INCOMPLETE), naming what it could not run
 SIGNER=<funded public id> ./scripts/adversarial-onchain.sh
+
+# all three: point SPENT_ARGS at a claim whose marker PDA is already on chain
+SIGNER=<funded public id> SPENT_ARGS=artifacts/e2e/dist1/claim_0.args \
+  ./scripts/adversarial-onchain.sh
 ```
 
 These use the deployed programs and a fresh, throwaway private claimant. The valid
@@ -83,6 +91,21 @@ against a fresh distribution whose marker is still unspent — so nothing but th
 tampering can account for the rejection. The double-claim resubmits a claim whose
 marker is already on chain. All three fail at proof generation with the messages
 above, so none reaches a block.
+
+Attack 3 is the one that needs an input the repository cannot carry: an args file
+whose marker is already spent. Those files hold a recipient's `nsk`, so they are
+gitignored and never committed — `scripts/deploy-and-claim.sh` writes them into
+`artifacts/e2e/dist*/`, and `SPENT_ARGS` points the script at one. A run without
+it performs two attacks, says so per attack in its summary, and exits 2; only a
+3-of-3 run exits 0 and prints the three-attack verdict. The double-claim
+rejection is separately exercised with no funded account and no chain by
+`cargo test -p claim-verifier-tests` (`claim_rejects.rs`), which CI runs on every
+push against the committed verifier binary, so §3 above is covered even when this
+script cannot run it.
+
+Exit status: `0` all three ran and were rejected, `1` an attack was not rejected
+or was rejected for the wrong reason, `2` an attack could not run — a missing
+input or a missing dependency, neither of which is a fact about the deployment.
 
 The script treats a produced transaction as a failure, not just an unexpected
 error message: an attack that got through would fail the run loudly rather than
