@@ -185,8 +185,11 @@ reset again:
 
 ## How to reproduce
 
-Pre-requisites: macOS arm64 or Linux with `cargo`, `docker`, and the Logos
-toolchain (`wallet` and `spel` from LEZ/spel at the versions above).
+Pre-requisites: macOS arm64 or Linux with `cargo`, `docker`, `curl`, `python3`,
+`jq`, and the Logos toolchain (`wallet` and `spel` from LEZ/spel at the versions
+above). `verify-onchain-claim.sh` needs `curl`, `python3` and `jq`, and refuses
+to start (exit 2) naming the missing one rather than reporting the chain
+evidence as absent.
 
 ```bash
 # 1. Build the two guests (content-addressed; the committed binaries are these).
