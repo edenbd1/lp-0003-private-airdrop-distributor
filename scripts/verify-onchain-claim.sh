@@ -2,7 +2,11 @@
 # Verify, from public data, that an LP-0003 claim's membership proof is really
 # verified on chain by the claim verifier program.
 #
-# Needs curl, python3, jq. Nothing is taken on trust: every identifier is derived
+# Needs curl, python3 and jq; it refuses to start (exit 2) if one is missing,
+# rather than letting the absence read as missing chain evidence. Exit 0 verified,
+# 1 a check failed, 2 the checks could not run.
+#
+# Nothing is taken on trust: every identifier is derived
 # from the binaries in this repository or decoded from the bytes the sequencer
 # returns. Reads the chain over getTransaction / getAccount, which is the source
 # of truth, rather than the block explorer, whose index is irregular and misses
@@ -31,6 +35,24 @@ set -uo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 RPC="${SEQUENCER_URL:-https://testnet.lez.logos.co}"
+
+# Preflight, before a single check runs. Every check below decodes an RPC reply
+# through jq or python3; with one of them missing the decode yields the empty
+# string and each check reports its transaction or account as absent from the
+# chain. That is a false negative about the deployment produced entirely by this
+# machine, so the tool is named here instead and nothing is read from the chain.
+MISSING=""
+for tool in curl python3 jq; do
+  command -v "$tool" >/dev/null 2>&1 || MISSING="$MISSING $tool"
+done
+if [ -n "$MISSING" ]; then
+  printf '\033[31mMISSING DEPENDENCY:\033[0m%s\n' "$MISSING" >&2
+  echo "scripts/verify-onchain-claim.sh needs curl, python3 and jq. Nothing was read" >&2
+  echo "from the chain, so this is a fact about this machine, not about the claim or" >&2
+  echo "the deployment. Install the tool(s) above (apt-get install -y jq, brew install" >&2
+  echo "jq) and re-run; the claim hashes are in artifacts/e2e/claims.tsv either way." >&2
+  exit 2
+fi
 
 CLAIM_LEZ_BIN=artifacts/programs/claim_lez.bin
 VERIFIER_BIN=artifacts/programs/claim_verifier.bin

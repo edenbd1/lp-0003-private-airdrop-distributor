@@ -80,9 +80,11 @@ step, and how to re-verify are in [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md).
 
 ## Quickstart
 
-From a clean clone, with a Rust toolchain (and, for step 3's deployed-binary
-tests, the risc0 VM `r0vm` from `cargo risczero install`; the step is skipped with
-a note if it is absent):
+From a clean clone, with a Rust toolchain, `python3`, and `curl` + `jq` for the
+final step's live chain read (and, for step 3's deployed-binary tests, the risc0
+VM `r0vm` from `cargo risczero install`; the step is skipped with a note if it is
+absent, and the closing summary says so). The demo checks each of these by name
+in step 0 and tells you which is missing:
 
 ```
 ./scripts/demo.sh
@@ -121,8 +123,8 @@ verification of a deployed claim.
   sequencer from (`git clone https://github.com/logos-blockchain/logos-execution-zone _external/lez`,
   or point `LEZ_SRC` at an existing one); the script header lists the env vars.
   This is what the `.github/workflows/e2e-local-sequencer.yml` CI job runs, which
-  clones LEZ for you. The zero-dependency clean-clone demo is `scripts/demo.sh`
-  above.
+  clones LEZ for you. The clean-clone demo that needs no sequencer and no funded
+  account is `scripts/demo.sh` above.
 - **Full create-then-claim on the public testnet** (real proving, funded account
   needed): `scripts/deploy-and-claim.sh`; see [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md).
 
@@ -132,7 +134,7 @@ Every claim's on-chain evidence is checkable from public data, reading the chain
 over RPC rather than trusting the block explorer:
 
 ```
-./scripts/verify-onchain-claim.sh
+./scripts/verify-onchain-claim.sh          # needs curl, python3 and jq
 ```
 
 It confirms both programs are the bytecode in this repository (deploy hashes are
