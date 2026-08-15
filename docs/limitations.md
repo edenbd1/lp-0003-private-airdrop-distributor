@@ -70,9 +70,13 @@ Two independent facts, kept apart because conflating them weakens the second:
    yet", not "dead": `getTransaction` over RPC returns each live transaction
    immediately, and `null` for a hash that cannot exist, which makes the RPC the
    source of truth for anything recent. `scripts/check-explorer.py` reproduces the
-   measurement; it renders the pages, because the explorer is a WASM application
-   that returns an identical shell for every hash and cannot be probed with
-   `curl`.
+   measurement by rendering the pages headless against an impossible hash as the
+   control. It renders because the explorer used to be a WASM application serving
+   an identical shell for every hash, which `curl` could not probe; re-measured
+   2026-08-15 it server-side renders, so `curl` now separates a real transaction
+   (~366 kB, carrying `Type:` and `Proof Size:`) from one that cannot exist (2416
+   bytes, `Transaction not found`). Rendering is kept as the second opinion: it
+   reads the DOM a reviewer sees rather than a byte count.
 2. **A privacy claim is unattributable by construction.** Independently of any
    indexer, a privacy-preserving transaction publishes no `program_id` and no
    `instruction_data`. Even a perfect explorer could show only that a privacy

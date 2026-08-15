@@ -3,17 +3,27 @@
 
 WHY THIS EXISTS
 
-Explorer links in a submission should be measured rather than asserted — and the
-obvious measurement does not work.
+Explorer links in a submission should be measured rather than asserted.
 
-The explorer is a WASM application. Every `/transaction/<hash>` URL returns the
-same shell and fetches its content client-side, so an indexed transaction and a
-hash that *cannot exist* are byte-identical over `curl`. A size comparison
-cannot distinguish them, and any conclusion drawn from one is wrong.
+When this script was written the explorer was a WASM application: every
+`/transaction/<hash>` URL returned the same 2416-byte shell and fetched its
+content client-side, so an indexed transaction and a hash that *cannot exist*
+were byte-identical over `curl` and a size comparison could not tell them apart.
+That is why this drives a browser at all.
 
-So this renders each page in a headless browser and prints the verdict, with an
-impossible hash as the control: whatever the explorer shows for "this does not
-exist" is the baseline every real hash is compared against.
+That is no longer true. Re-measured 2026-08-15, the explorer server-side renders
+(Leptos): a claim comes back around 366 kB with its `Type:` and `Proof Size:` in
+the body, and a hash that cannot exist comes back as a 2416-byte page reading
+`Failed to load transaction: error running server function: Transaction not
+found`. So `curl` does separate them now, and docs/DEPLOYMENT.md gives that
+one-liner.
+
+Rendering is kept as the second opinion, not as a necessity: it reads the DOM a
+reviewer actually sees rather than a byte count, and it keeps working if the
+explorer goes back to rendering client-side. The impossible hash stays as the
+control — whatever the explorer shows for "this does not exist" is the baseline
+every real hash is compared against, and if that control ever renders as a
+*found* transaction the baseline is meaningless and the whole run is abandoned.
 
 The hashes come from the artifacts, not from the prose:
 
@@ -35,6 +45,7 @@ import sys
 
 BASE = "https://explorer.testnet.lez.logos.co"
 IMPOSSIBLE = "de" * 32
+NOT_FOUND = "Transaction not found"
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 
 
@@ -92,6 +103,16 @@ def main():
         browser.close()
 
     control = results[0][2]
+    # The control is the whole basis of the comparison. If a hash that cannot
+    # exist renders as a found transaction, the baseline is wrong and every
+    # verdict derived from it is meaningless — so refuse to print any.
+    if NOT_FOUND not in control:
+        sys.exit(
+            f"control ({IMPOSSIBLE[:8]}…) is a hash that cannot exist, but the explorer did "
+            f"not render it as not-found. The baseline is invalid, so no verdict below it "
+            f"would mean anything. Control rendered:\n  {control[:300]}"
+        )
+
     print(f"{'hash':<22} {'':<10} verdict")
     for label, h, text in results[1:]:
         verdict = "NOT INDEXED (same as control)" if text == control else "INDEXED"
