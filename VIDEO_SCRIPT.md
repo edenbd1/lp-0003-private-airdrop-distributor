@@ -28,7 +28,7 @@
 **🎬 ACTION** :
 
 ```bash
-cd /Users/eden/data/ns.com/lp-0003
+cd $REPO
 clear
 ```
 
@@ -55,7 +55,7 @@ ferme Slack/Discord/notifications, fenêtre terminal en plein écran.
 démo prêt à pointer. Réinstalle depuis le package committé avant d'enregistrer :
 
 ```bash
-LGX=/Users/eden/logos/src/logos-package/build/lgx   # pas sur le PATH, chemin complet
+LGX=$LOGOS_PACKAGE/build/lgx   # pas sur le PATH, chemin complet
 DST=~/Library/Application\ Support/Logos/LogosBasecamp/plugins/lp-0003-airdrop
 rm -rf "$DST" && "$LGX" extract app/lp-0003-airdrop.lgx --variant darwin-arm64 --output /tmp/x
 mkdir -p "$DST" && cp -R /tmp/x/darwin-arm64/. "$DST/"
@@ -171,9 +171,9 @@ privé jetable créé à la volée — pas de `CLAIMANT` à fournir. Prépare **
 filmer** (hors caméra) un compte public financé via le faucet :
 
 ```bash
-export PATH="/Users/eden/data/ns.com/lp-0003/vendor/spel/target/release:$HOME/.cargo/bin:$HOME/.risc0/bin:$PATH"
-export WALLET_BIN=/Users/eden/data/ns.com/lp-0002/_external/lez/target/release/wallet   # LEZ v0.2.4
-export SPEL_BIN=/Users/eden/data/ns.com/lp-0003/vendor/spel/target/release/spel
+export PATH="$REPO/vendor/spel/target/release:$HOME/.cargo/bin:$HOME/.risc0/bin:$PATH"
+export WALLET_BIN=$LEZ_SRC/target/release/wallet   # a LEZ v0.2.4 checkout   # LEZ v0.2.4
+export SPEL_BIN=$REPO/vendor/spel/target/release/spel
 export DYLD_FALLBACK_FRAMEWORK_PATH=/Library/Developer/CommandLineTools/Library/Frameworks
 export LEE_WALLET_HOME_DIR=~/.lez-wallet NSSA_WALLET_HOME_DIR=~/.lez-wallet
 mkdir -p ~/.lez-wallet
@@ -341,7 +341,7 @@ tar xzf app/lp-0003-airdrop.lgx -C /tmp/pkg && /tmp/pkg/variants/darwin-arm64/ai
 | **Total** | **~7 min hors proving** |
 
 > **Les horodatages absolus ont été retirés.** La scène 3 dure ce que dure la
-> preuve, et cela dépend de la machine : sur LP-0002, la même opération est
+> preuve, et cela dépend de la machine : sur un projet voisin, la même opération est
 > passée de 150 s à 437 s en changeant de version de LEZ, et à 935 s avec une
 > autre preuve tournant en parallèle. Toutes les scènes suivantes glissent
 > d'autant. Lance `pgrep -fl r0vm` avant de filmer — s'il sort quelque chose,
