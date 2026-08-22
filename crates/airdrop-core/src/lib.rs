@@ -153,7 +153,11 @@ pub fn fold_merkle_path(leaf: &[u8; 32], leaf_index: u64, siblings: &[[u8; 32]])
 ///
 /// `leaf = SHA256(ELIGIBILITY_LEAF_PREFIX || account_id || allocation_le || salt)`
 #[must_use]
-pub fn compute_eligibility_leaf(account_id: &[u8; 32], allocation: u128, salt: &[u8; 32]) -> [u8; 32] {
+pub fn compute_eligibility_leaf(
+    account_id: &[u8; 32],
+    allocation: u128,
+    salt: &[u8; 32],
+) -> [u8; 32] {
     let mut h = Sha256::new();
     h.update(ELIGIBILITY_LEAF_PREFIX);
     h.update(account_id);
@@ -311,7 +315,10 @@ pub type EligibilityTree = ([u8; 32], Vec<MerklePath>);
 #[cfg(feature = "std")]
 #[must_use]
 pub fn build_eligibility_tree(leaves: &[[u8; 32]]) -> EligibilityTree {
-    assert!(!leaves.is_empty(), "an eligibility set needs at least one entry");
+    assert!(
+        !leaves.is_empty(),
+        "an eligibility set needs at least one entry"
+    );
 
     // Pad to a power of two with a domain-separated sentinel that no real leaf
     // can equal (it commits to no account).
@@ -328,9 +335,7 @@ pub fn build_eligibility_tree(leaves: &[[u8; 32]]) -> EligibilityTree {
     let width = level.len();
 
     // Record each original leaf's path as we fold up.
-    let mut paths: Vec<MerklePath> = (0..leaves.len())
-        .map(|i| (i as u64, Vec::new()))
-        .collect();
+    let mut paths: Vec<MerklePath> = (0..leaves.len()).map(|i| (i as u64, Vec::new())).collect();
 
     let mut nodes = level;
     let mut idx_width = width;

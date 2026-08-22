@@ -258,7 +258,7 @@ impl Scenario {
         builder.write(&caller)?;
         builder.write(&pre_states)?;
         builder.write(&instruction_data)?;
-        Ok(default_executor().execute(builder.build()?, elf)?)
+        default_executor().execute(builder.build()?, elf)
     }
 }
 
@@ -309,7 +309,8 @@ fn a_rejected_claim_leaves_the_recipient_free_to_retry() {
     // so this is genuinely the same recipient's attempt.
     let mut bad = Scenario::honest(&pid);
     bad.allocation = bad.witness.allocation * 7;
-    bad.run(&elf, &pid).expect_err("the inflated first attempt must be rejected");
+    bad.run(&elf, &pid)
+        .expect_err("the inflated first attempt must be rejected");
     // The marker was never stamped (marker_owner still default), so the honest
     // retry by the same recipient is accepted.
     Scenario::honest(&pid)
@@ -326,7 +327,9 @@ fn an_unanchored_root_is_rejected() {
     let pid = program_id(&elf);
     let mut s = Scenario::honest(&pid);
     s.distribution_owner = ProgramId::default(); // never created on chain
-    let err = s.run(&elf, &pid).expect_err("an invented root must be rejected");
+    let err = s
+        .run(&elf, &pid)
+        .expect_err("an invented root must be rejected");
     let msg = format!("{err:#}");
     assert!(
         msg.contains("4003") || msg.to_lowercase().contains("anchor"),
@@ -376,7 +379,9 @@ fn a_forged_nullifier_is_rejected() {
     // Keep the marker seed consistent with the forged nullifier so it is the
     // nullifier check that trips, not the marker check.
     s.marker_seed = compute_claim_marker(&s.distribution_id, &s.nullifier);
-    let err = s.run(&elf, &pid).expect_err("a forged nullifier must be rejected");
+    let err = s
+        .run(&elf, &pid)
+        .expect_err("a forged nullifier must be rejected");
     let msg = format!("{err:#}");
     assert!(
         msg.contains("4002") || msg.to_lowercase().contains("nullifier"),
@@ -392,7 +397,9 @@ fn an_inflated_allocation_is_rejected() {
     let pid = program_id(&elf);
     let mut s = Scenario::honest(&pid);
     s.allocation = s.witness.allocation * 100;
-    let err = s.run(&elf, &pid).expect_err("an inflated allocation must be rejected");
+    let err = s
+        .run(&elf, &pid)
+        .expect_err("an inflated allocation must be rejected");
     let msg = format!("{err:#}");
     assert!(
         msg.contains("4006") || msg.to_lowercase().contains("allocation"),
@@ -411,7 +418,9 @@ fn a_second_claim_on_an_initialized_marker_is_rejected() {
     let pid = program_id(&elf);
     let mut s = Scenario::honest(&pid);
     s.marker_owner = pid; // a prior claim already stamped and owns the marker
-    let err = s.run(&elf, &pid).expect_err("a second claim must be rejected");
+    let err = s
+        .run(&elf, &pid)
+        .expect_err("a second claim must be rejected");
     let msg = format!("{err:#}").to_lowercase();
     assert!(
         msg.contains("alreadyinitialized") || msg.contains("already initialized"),
@@ -427,7 +436,9 @@ fn a_forged_marker_seed_is_rejected() {
     let pid = program_id(&elf);
     let mut s = Scenario::honest(&pid);
     s.marker_seed = [0xAB; 32];
-    let err = s.run(&elf, &pid).expect_err("a forged marker seed must be rejected");
+    let err = s
+        .run(&elf, &pid)
+        .expect_err("a forged marker seed must be rejected");
     let msg = format!("{err:#}");
     assert!(
         msg.contains("4004") || msg.to_lowercase().contains("marker"),
