@@ -44,7 +44,13 @@ fn setup(n: usize) -> Setup {
         salts.push(salt);
     }
     let (root, paths) = build_eligibility_tree(&leaves);
-    Setup { root, nsks, allocations, salts, paths }
+    Setup {
+        root,
+        nsks,
+        allocations,
+        salts,
+        paths,
+    }
 }
 
 fn witness_for(s: &Setup, i: usize) -> ClaimWitness {

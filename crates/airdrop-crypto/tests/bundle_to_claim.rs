@@ -113,13 +113,21 @@ fn the_scan_skips_junk_and_finds_the_anchoring_row() {
                 leaf_index: paths[i].0,
                 merkle_path: paths[i].1.clone(),
             };
-            encrypt_row(&enc_public_key(&nsks[i]), &serde_json::to_vec(&payload).unwrap(), None)
+            encrypt_row(
+                &enc_public_key(&nsks[i]),
+                &serde_json::to_vec(&payload).unwrap(),
+                None,
+            )
         })
         .collect();
     // Adversarial noise: a low-order header that (without the contributory check)
     // would open for everyone with garbage, and a padding row that opens for no
     // one. The low-order header sorts to the front of the published bundle.
-    bundle.push(EncryptedRow { ephemeral_public: [0u8; 32], nonce: [0u8; 12], ciphertext: vec![7u8; 64] });
+    bundle.push(EncryptedRow {
+        ephemeral_public: [0u8; 32],
+        nonce: [0u8; 12],
+        ciphertext: vec![7u8; 64],
+    });
     bundle.push(dummy_row());
     bundle.sort_by_key(|r| r.ephemeral_public);
 

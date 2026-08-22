@@ -82,14 +82,22 @@ fn the_recovered_payload_reconstructs_the_committed_leaf() {
     let committed_leaf = compute_eligibility_leaf(&account_id, alloc, &salt);
 
     // The distributor seals the row.
-    let p = RowPayload { allocation: alloc, salt, leaf_index: 0, merkle_path: vec![] };
-    let row = encrypt_row(&enc_public_key(&nsk), &serde_json::to_vec(&p).unwrap(), None);
+    let p = RowPayload {
+        allocation: alloc,
+        salt,
+        leaf_index: 0,
+        merkle_path: vec![],
+    };
+    let row = encrypt_row(
+        &enc_public_key(&nsk),
+        &serde_json::to_vec(&p).unwrap(),
+        None,
+    );
 
     // The recipient opens it and reconstructs the leaf.
     let opened: RowPayload =
         serde_json::from_slice(&decrypt_row(&derive_enc_keypair(&nsk), &row).unwrap()).unwrap();
-    let recovered_leaf =
-        compute_eligibility_leaf(&account_id, opened.allocation, &opened.salt);
+    let recovered_leaf = compute_eligibility_leaf(&account_id, opened.allocation, &opened.salt);
     assert_eq!(recovered_leaf, committed_leaf);
 }
 

@@ -205,9 +205,7 @@ fn demo_distribution(
     println!("distribution id   {}", dist.id_hex);
     println!("eligibility root  {}", dist.root_hex);
     println!("recipients        {count}");
-    println!(
-        "wrote             {out}/distribution.json, {out}/recipients.json, {out}/bundle.json"
-    );
+    println!("wrote             {out}/distribution.json, {out}/recipients.json, {out}/bundle.json");
     Ok(())
 }
 
@@ -262,16 +260,17 @@ fn claim_from_bundle(dir: &str, nsk_hex: &str, out: &str) -> Result<()> {
         .next()
         .context("no row in the bundle opens for this secret and anchors to the committed root")?;
 
-    let instruction = airdrop_core::ClaimInstruction {
-        witness,
-        statement,
-    };
+    let instruction = airdrop_core::ClaimInstruction { witness, statement };
     let words: Vec<u32> = risc0_zkvm::serde::to_vec(&instruction)?;
     let hexq = |b: &[u8; 32]| format!("'{}'", hex::encode(b));
     let lines = [
         format!(
             "--witness-words '{}'",
-            words.iter().map(u32::to_string).collect::<Vec<_>>().join(",")
+            words
+                .iter()
+                .map(u32::to_string)
+                .collect::<Vec<_>>()
+                .join(",")
         ),
         format!("--distribution-root {}", hexq(&distribution_root)),
         format!("--distribution-id {}", hexq(&distribution_id)),
@@ -345,7 +344,11 @@ fn claim_args(dir: &str, index: usize, out: &str) -> Result<()> {
     let lines = [
         format!(
             "--witness-words '{}'",
-            words.iter().map(u32::to_string).collect::<Vec<_>>().join(",")
+            words
+                .iter()
+                .map(u32::to_string)
+                .collect::<Vec<_>>()
+                .join(",")
         ),
         format!("--distribution-root {}", hexq(&distribution_root)),
         format!("--distribution-id {}", hexq(&distribution_id)),
@@ -359,7 +362,10 @@ fn claim_args(dir: &str, index: usize, out: &str) -> Result<()> {
     println!("recipient        {index}");
     println!("account leaf     {}", hex::encode(leaf));
     println!("nullifier        {}", hex::encode(nullifier));
-    println!("marker seed      {}   (the claim marker PDA seed)", hex::encode(marker_seed));
+    println!(
+        "marker seed      {}   (the claim marker PDA seed)",
+        hex::encode(marker_seed)
+    );
     println!("allocation       {}", r.allocation);
     println!("witness          {} u32 words", words.len());
     println!("wrote            {out}");
@@ -369,9 +375,14 @@ fn claim_args(dir: &str, index: usize, out: &str) -> Result<()> {
 fn main() -> Result<()> {
     let cli = Cli::parse();
     match cli.cmd {
-        Cmd::DemoDistribution { count, id, base, step, pad, out } => {
-            demo_distribution(count, hex32(&id)?, base, step, pad, &out)
-        }
+        Cmd::DemoDistribution {
+            count,
+            id,
+            base,
+            step,
+            pad,
+            out,
+        } => demo_distribution(count, hex32(&id)?, base, step, pad, &out),
         Cmd::ClaimArgs { dir, index, out } => claim_args(&dir, index, &out),
         Cmd::ClaimFromBundle { dir, nsk, out } => claim_from_bundle(&dir, &nsk, &out),
     }
