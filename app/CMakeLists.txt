@@ -47,7 +47,7 @@ if(DEFINED ENV{LOGOS_MODULE_BUILDER_ROOT})
     )
 
     qt_add_resources(lp_0003_airdrop_module_plugin "qml"
-        PREFIX "/qml"
+        PREFIX "/lp_0003_airdrop"
         BASE "qml"
         FILES qml/Main.qml qml/qmldir
     )
@@ -75,7 +75,7 @@ else()
     )
 
     qt_add_resources(lp_0003_airdrop_plugin "qml"
-        PREFIX "/qml"
+        PREFIX "/lp_0003_airdrop"
         BASE "qml"
         FILES qml/Main.qml qml/qmldir
     )
