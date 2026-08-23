@@ -23,12 +23,16 @@
 # (the live on-chain check, which reads the chain over JSON-RPC and decodes the
 # replies with jq). Step 0 checks all of these by name and says which is missing.
 # Step 3 (the deployed-binary tests through the sequencer's executor) additionally
-# needs the risc0 VM `r0vm` (`cargo risczero install`); if it is absent the step is
-# skipped with a note rather than failing, and the closing summary says so. `spel`
+# needs the risc0 VM `r0vm`. Step 0 installs it with `rzup` if `rzup` is present;
+# if it cannot, the step does not run and the whole demo exits 3 rather than 0, so
+# a run with a missing step can never read as a clean pass. `spel`
 # on PATH is optional (step 0's program id). No funded account, no local sequencer.
 #
-# Exit status: 0 everything ran and passed; non-zero if step 9 did not pass —
-# 1 the chain check failed, 2 it could not run because a tool is missing.
+# Exit status: 0 everything ran and passed. Non-zero otherwise, and the code says
+# which kind of not-passing it was: 1 the chain check failed, 2 the chain check
+# could not run because a tool is missing, 3 every check that ran passed but step
+# 3 did not run at all. 0 means every step ran; there is no exit code under which
+# a step can be skipped and the run still called complete.
 
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -73,6 +77,21 @@ else
 fi
 rustc --version
 
+# r0vm is what step 3 needs to execute the committed verifier binary. Rather than
+# discover its absence at step 3 and print a skip, try to install it here: rzup
+# ships with the risc0 toolchain and the download is small. A skipped step and a
+# passing step look identical in a scrollback, so the goal is to have no skipped
+# step rather than a well-labelled one.
+if ! command -v r0vm >/dev/null 2>&1; then
+  if command -v rzup >/dev/null 2>&1; then
+    echo "r0vm absent; installing it with rzup so step 3 can run ..."
+    rzup install r0vm 3.0.5 >/dev/null 2>&1 || true
+    export PATH="$HOME/.risc0/bin:$PATH"
+  elif [ -x "$HOME/.risc0/bin/r0vm" ]; then
+    export PATH="$HOME/.risc0/bin:$PATH"
+  fi
+fi
+
 test -f artifacts/programs/claim_verifier.bin \
   || { echo "artifacts/programs/claim_verifier.bin missing. Build with: cargo risczero build --manifest-path crates/claim-verifier-spel/methods/guest/Cargo.toml" >&2; exit 1; }
 spel program-id artifacts/programs/claim_verifier.bin 2>/dev/null | grep -E '📦|ProgramId \(hex\)' || true
@@ -99,8 +118,11 @@ if command -v r0vm >/dev/null 2>&1; then
   cargo test -p claim-verifier-tests --quiet 2>&1 | grep -E "result: ok\. [1-9]" | sed 's/^/   /'
 else
   STEP3_RAN=0
-  echo "   (SKIPPED: needs the risc0 VM r0vm, install with 'cargo risczero install';"
-  echo "    CI runs these on every push against the committed binary)"
+  echo "   (NOT RUN: needs the risc0 VM r0vm, and it could not be installed here."
+  echo "    Install it with 'curl -L https://risczero.com/install | bash && rzup install r0vm 3.0.5'"
+  echo "    and re-run. This demo will exit 3, because a step that did not run must"
+  echo "    not be reported as a step that passed. CI runs these on every push"
+  echo "    against the committed binary.)"
 fi
 
 rule "4. a distribution, padded so its size is hidden"
@@ -124,12 +146,17 @@ fi
 echo "   refused: no row in the bundle opens for a secret that is not eligible."
 
 rule "7. compute cost"
+echo "Both on-chain instructions, replayed through the sequencer's own executor:"
 if command -v r0vm >/dev/null 2>&1; then
+  # The title line is part of the output on purpose. Two unlabelled blocks of
+  # cycle counts are two numbers nobody can attribute.
   cargo test -p claim-verifier-tests --quiet -- --ignored --nocapture 2>&1 \
-    | grep -E 'user cycles|proving cycles|budget consumed' | sed 's/^/   /'
+    | grep -E 'guest execution only|user cycles|proving cycles|budget consumed' \
+    | sed -e 's/^\.*//' -e 's/^/   /'   # --quiet emits progress dots inline
 else
   echo "   (measured through r0vm, which is absent here; see docs/benchmarks/cu-budget.md)"
-  echo "   claim: 318,242 user cycles / 524,288 proving cycles = 1.56% of the budget"
+  echo "   create_distribution: 108,596 user cycles / 262,144 proving cycles = 0.78% of the budget"
+  echo "   claim:               318,242 user cycles / 524,288 proving cycles = 1.56% of the budget"
 fi
 
 rule "8. what an observer sees"
@@ -170,8 +197,16 @@ elif [ "$ONCHAIN_RC" -ne 0 ]; then
   echo "be checked with any JSON-RPC client via getTransaction."
 fi
 
+# The verdict is computed before it is printed. A step that did not run has to
+# change the headline, not be mentioned underneath a green one.
+if [ "$STEP3_RAN" -eq 0 ] && [ "$ONCHAIN_RC" -eq 0 ]; then
+  ONCHAIN_RC=3
+fi
 if [ "$ONCHAIN_RC" -eq 0 ]; then
   printf '\n\033[1mdemo complete\033[0m — working directory %s\n' "$WORK"
+elif [ "$ONCHAIN_RC" -eq 3 ]; then
+  printf '\n\033[1;31mdemo INCOMPLETE\033[0m — everything that ran passed, but step 3 did not run (exit 3); working directory %s\n' \
+    "$WORK"
 else
   printf '\n\033[1;31mdemo INCOMPLETE\033[0m — step 9 did not pass (exit %s); working directory %s\n' \
     "$ONCHAIN_RC" "$WORK"
@@ -180,7 +215,7 @@ if [ "$STEP3_RAN" -eq 1 ]; then
   echo "Steps 1-3 ran against the sequencer's executor in-process."
 else
   echo "Steps 1-2 ran. Step 3, the deployed binary through the sequencer's executor,"
-  echo "was SKIPPED here because r0vm is absent; CI runs it on every push."
+  echo "DID NOT RUN here because r0vm is absent; CI runs it on every push."
 fi
 echo "To drive the whole lifecycle against a REAL standalone sequencer (it starts its"
 echo "own, no funded account needed), run scripts/e2e-local-sequencer.sh. The"

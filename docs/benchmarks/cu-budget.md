@@ -49,6 +49,28 @@ itself is a few seconds.
 This is the real first-claim latency, and it is minutes rather than seconds: a
 deployment sensitive to it should prove in the background and submit when ready.
 
+### One machine anyone can check
+
+Refusing to quote a single number is honest but unhelpful on its own, so here is
+one that is not this laptop and that anyone can re-read: the scheduled
+`e2e vs local sequencer` workflow proves exactly one claim with
+`RISC0_DEV_MODE=0` on a stock GitHub-hosted `ubuntu-latest` runner, and the log
+timestamps bracket that step. Across four consecutive runs:
+
+| Run | Date | One proof, submitted and confirmed |
+|---|---|---|
+| [32619466165](https://github.com/edenbd1/lp-0003-private-airdrop-distributor/actions/runs/32619466165) | 2026-08-23 | 67m 02s |
+| [32553311769](https://github.com/edenbd1/lp-0003-private-airdrop-distributor/actions/runs/32553311769) | 2026-08-22 | 67m 05s |
+| [32334421273](https://github.com/edenbd1/lp-0003-private-airdrop-distributor/actions/runs/32334421273) | 2026-08-20 | 46m 12s |
+| [32218178876](https://github.com/edenbd1/lp-0003-private-airdrop-distributor/actions/runs/32218178876) | 2026-08-19 | 62m 57s |
+
+Same commit range, same runner image, same single proof: 46 to 67 minutes. That
+spread — a factor of 1.45 on identical work — is the argument for not printing one
+number, made with numbers. The laptop figure of roughly 150 s and the runner
+figure of roughly an hour are both true, about different machines, and neither
+generalises. `scripts/e2e-local-sequencer.sh` now prints the elapsed time it
+measured, so every future run says which machine it was.
+
 The claim verifier is cheap because it does no heavy in-guest cryptography
 itself: it re-derives the nullifier and marker seed (a few SHA-256 hashes),
 reads the anchored distribution's owner, and declares the chained call. Merkle
