@@ -82,6 +82,10 @@ SIGNER=<funded public id> ./scripts/adversarial-onchain.sh
 # all three: point SPENT_ARGS at a claim whose marker PDA is already on chain
 SIGNER=<funded public id> SPENT_ARGS=artifacts/e2e/dist1/claim_0.args \
   ./scripts/adversarial-onchain.sh
+
+# §3 alone, from a clean clone and with no committed input: prove and land one
+# real claim, then resubmit the identical claim under a different signer
+SIGNER=<funded public id> ./scripts/prove-one-claim.sh
 ```
 
 These use the deployed programs and a fresh, throwaway private claimant. The valid
@@ -102,6 +106,14 @@ rejection is separately exercised with no funded account and no chain by
 `cargo test -p claim-verifier-tests` (`claim_rejects.rs`), which CI runs on every
 push against the committed verifier binary, so §3 above is covered even when this
 script cannot run it.
+
+It is also reproducible live from a clean clone, which is the version worth
+running if you only run one: `scripts/prove-one-claim.sh` creates its own
+distribution, proves and lands one claim, and then in step 6 resubmits that exact
+claim under a different signer. It needs no committed secret because it has just
+generated one, and it fails the run if the second attempt produces a transaction
+instead of `AccountAlreadyInitialized`. The different signer matters: it shows the
+guard is bound to the recipient's nullifier and not to whoever submits.
 
 Exit status: `0` all three ran and were rejected, `1` an attack was not rejected
 or was rejected for the wrong reason, `2` an attack could not run — a missing

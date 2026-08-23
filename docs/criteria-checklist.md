@@ -36,14 +36,14 @@ satisfies it. Codes: ✅ done, 🔧 scripted and reproducible, pending a live ru
 
 | Criterion | Evidence |
 |---|---|
-| CU cost of each on-chain operation | ✅ measured by replaying the sequencer's execution: `claim` is 318,242 user cycles / 524,288 proving cycles, i.e. 1.56% of the 33,554,432 execution budget. `docs/benchmarks/cu-budget.md`, reproduced by `claim-verifier-tests`. |
+| CU cost of each on-chain operation | ✅ **both** instructions measured by replaying the sequencer's own execution of the deployed binary: `create_distribution` is 108,596 user cycles / 262,144 proving cycles (0.78% of the 33,554,432 budget), `claim` is 318,242 / 524,288 (1.56%). `docs/benchmarks/cu-budget.md`; reproduce with `cargo test -p claim-verifier-tests --test claim_rejects -- --ignored --nocapture`, which prints both. |
 
 ## Supportability
 
 | Criterion | Evidence |
 |---|---|
 | Deployed and tested on LEZ testnet | ✅ two programs live (`docs/DEPLOYMENT.md`). |
-| E2E tests against a LEZ sequencer in CI | ✅ two levels. `claim-verifier-tests` runs the deployed binary through the sequencer's executor on every push (`ci.yml`). `scripts/e2e-local-sequencer.sh` starts a real standalone `sequencer_service`, deploys, commits a distribution, and submits a real `RISC0_DEV_MODE=0` privacy claim it verifies over RPC; wired into `.github/workflows/e2e-local-sequencer.yml` (scheduled + on demand). Run locally end to end: a claim lands as a PrivacyPreserving tx with a Succinct receipt and the marker is owned by the verifier. |
+| E2E tests against a LEZ sequencer in CI | ✅ **`.github/workflows/e2e-local-sequencer.yml`** runs `scripts/e2e-local-sequencer.sh` in GitHub Actions on **every commit to `main`, on every `v*` tag, on a daily schedule and on demand** — no `if:` guard, no `paths` filter, nothing that can mark it skipped. The script builds `sequencer_service --features standalone` from a pinned `logos-execution-zone`, starts it, deploys both programs, commits a distribution, and submits a real `RISC0_DEV_MODE=0` privacy-preserving claim whose receipt that sequencer verifies, then reads the marker PDA back off the local chain and checks its owner. Runs 58-80 min (median ~76). A second, faster level runs on the same commits: `claim-verifier-tests` executes the deployed binary through the sequencer's own executor in `ci.yml`. |
 | CI green on the default branch | ✅ `.github/workflows/ci.yml`. |
 | README documents end-to-end usage | ✅ `README.md`, `docs/DEPLOYMENT.md`. |
 | Reproducible end-to-end demo, `RISC0_DEV_MODE=0` | ✅ `scripts/e2e-local-sequencer.sh` reproduces the whole flow from nothing — it spins up its own sequencer, so it needs no funded account or public testnet — and was run to a green `VERIFIED`. `scripts/deploy-and-claim.sh` is the same flow against the public testnet (needs a funded account). |

@@ -8,17 +8,25 @@ same inputs, same 32M session limit, same executor
 performs, measured rather than reported by the node.
 
 Measured against the deployed `claim_verifier.bin`
-(ImageID `31edc17c…a110385d`):
+(ImageID `31edc17c…a110385d`). The criterion asks for *each* on-chain operation,
+and the program has exactly two, so both are counted here rather than one counted
+and the other described:
 
-| Metric | `claim` |
-|---|---|
-| Segments | 1 |
-| **User cycles** | **318,242** |
-| **Proving cycles (sum of 2^po2)** | **524,288** |
-| Public execution budget | 33,554,432 |
-| **Budget consumed (proving cycles)** | **1.56 %** |
+| Metric | `create_distribution` | `claim` |
+|---|---|---|
+| Segments | 1 | 1 |
+| **User cycles** | **108,596** | **318,242** |
+| **Proving cycles (sum of 2^po2)** | **262,144** | **524,288** |
+| Public execution budget | 33,554,432 | 33,554,432 |
+| **Budget consumed (proving cycles)** | **0.78 %** | **1.56 %** |
 
-`create_distribution` is lighter still: it initialises one PDA and writes no data.
+`create_distribution` costs about a third of `claim` in user cycles: it validates
+two accounts, derives one PDA address from `[distribution_id, eligibility_root]`,
+and writes no data — the address *is* the commitment. It is not free, and the
+figure above is what it actually costs rather than an adjective. Both operations
+round up to a power-of-two proving trace, which is why the ratio of proving
+cycles (2×) is coarser than the ratio of user cycles (2.9×): `claim` crosses into
+the next power of two and `create_distribution` does not.
 
 ## Proof-generation wall-clock
 
@@ -55,5 +63,14 @@ not counted here.
 cargo test -p claim-verifier-tests --test claim_rejects -- --ignored --nocapture
 ```
 
-which prints the `claim verifier, guest execution only` line above, computed from
-the same `SessionInfo` the sequencer's executor produces.
+which prints both blocks above — `create_distribution, guest execution only` and
+`claim verifier, guest execution only` — computed from the same `SessionInfo` the
+sequencer's executor produces. Either can be run alone:
+
+```bash
+cargo test -p claim-verifier-tests --test claim_rejects \
+  report_the_create_distribution_cycle_cost -- --ignored --nocapture
+```
+
+Both go through one `report_cycles` helper, so the two numbers cannot drift into
+two different definitions of "a cycle".
