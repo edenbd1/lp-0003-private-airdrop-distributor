@@ -24,7 +24,7 @@
 // it to be owned by this program. An invented root gives a different PDA address
 // that was never initialised, so its owner is the default and the claim is
 // rejected. The root is therefore anchored by the distributor's on-chain
-// commitment, the property LP-0005's balance attestation could not have.
+// commitment — a property a bare balance attestation cannot have.
 //
 // PRIVACY AND UNLINKABILITY
 //
