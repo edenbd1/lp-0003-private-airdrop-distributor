@@ -27,8 +27,13 @@
 #   PORT        sequencer RPC port           (default: first free from 3141)
 #   KEEP        set to 1 to leave the sequencer running for inspection
 #
-# Budget: one claim is a real proof, measured at ~150 s. COUNT1=1 COUNT2=0 is a
-# single proof and is what CI uses; it still exercises every integration point.
+# Budget: one claim is one real STARK, and how long that takes is a fact about the
+# machine, not about this code. On an Apple-Silicon laptop it is ~150 s; on the
+# stock `ubuntu-latest` GitHub runner where CI runs this, the same single proof
+# has measured 46-67 min across the last month of scheduled runs. The script does
+# not assert either number: it times the lifecycle and prints what it measured, so
+# the log always agrees with the clock. COUNT1=1 COUNT2=0 is the single-proof
+# shape CI uses, and it still exercises every integration point.
 
 set -uo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -158,7 +163,8 @@ CLAIMANT=$(wallet_run account list </dev/null 2>/dev/null \
 echo "  Private/$CLAIMANT"
 
 say "[5/5] deploy, commit a distribution, and claim against that sequencer"
-echo "  RISC0_DEV_MODE=0, $((COUNT1 + COUNT2)) real proof(s), ~150 s apiece"
+echo "  RISC0_DEV_MODE=0, $((COUNT1 + COUNT2)) real proof(s); timed below, per machine"
+LIFECYCLE_START=$(date +%s)
 RISC0_DEV_MODE=0 \
 SIGNER="$TEST_SIGNER" \
 CLAIMANT="$CLAIMANT" \
@@ -170,6 +176,9 @@ LEE_WALLET_HOME_DIR="$WALLET_HOME" \
 NSSA_WALLET_HOME_DIR="$WALLET_HOME" \
   ./scripts/deploy-and-claim.sh
 rc=$?
+LIFECYCLE_SECS=$(( $(date +%s) - LIFECYCLE_START ))
+printf '  lifecycle took %dm %02ds for %s real proof(s) on this machine\n' \
+  $(( LIFECYCLE_SECS / 60 )) $(( LIFECYCLE_SECS % 60 )) "$((COUNT1 + COUNT2))"
 
 MANIFEST=artifacts/e2e/deploy-run.tsv
 if [ $rc -ne 0 ] || [ ! -s "$MANIFEST" ]; then
@@ -191,8 +200,8 @@ rc=$?
 
 echo
 if [ $rc -eq 0 ]; then
-  printf '\033[1me2e against a real local sequencer: PASS\033[0m  (%s, %s claim(s), RISC0_DEV_MODE=0)\n' \
-    "$RPC" "$((COUNT1 + COUNT2))"
+  printf '\033[1me2e against a real local sequencer: PASS\033[0m  (%s, %s claim(s), RISC0_DEV_MODE=0, %dm %02ds)\n' \
+    "$RPC" "$((COUNT1 + COUNT2))" $(( LIFECYCLE_SECS / 60 )) $(( LIFECYCLE_SECS % 60 ))
 else
   echo "e2e against a real local sequencer: FAIL" >&2
 fi
