@@ -12,9 +12,9 @@
 //!
 //!   1. **Membership is against an anchored root.** The distributor publishes the
 //!      root on chain first; the claim proof is verified against that exact root,
-//!      not one the claimant invented. This is the property LP-0005's balance
-//!      attestation could not have on its own, and it is free here because an
-//!      airdrop has a distributor who commits the set up front.
+//!      not one the claimant invented. A bare balance attestation cannot have
+//!      that property on its own; it is free here because an airdrop has a
+//!      distributor who commits the set up front.
 //!
 //!   2. **The allocation is sealed into the leaf.** A leaf commits to
 //!      `(account_id, allocation, salt)`, so a claimant who edits the allocation
@@ -89,7 +89,7 @@ pub const CLAIM_MARKER_PREFIX: [u8; 32] = [
 ];
 
 // ---------------------------------------------------------------------------
-// Reused LEZ primitives (byte-identical to LP-0005 / upstream LEZ)
+// Reused LEZ primitives (byte-identical to upstream LEZ)
 // ---------------------------------------------------------------------------
 
 /// 32-byte domain separator for LEZ private account commitments.
@@ -260,8 +260,8 @@ pub enum ClaimError {
 /// [`ClaimError`] naming exactly which binding failed. The guest calls this and
 /// commits [`ClaimStatement`] to the journal only if it returns `Ok`.
 ///
-/// This deliberately takes the same shape as LP-0005's `attest`: witness plus a
-/// public statement it must satisfy, so the two share an audit vocabulary.
+/// The shape is deliberate: a witness plus a public statement it must satisfy,
+/// which is the vocabulary an auditor already reads elsewhere in this codebase.
 pub fn claim(witness: &ClaimWitness, statement: &ClaimStatement) -> Result<[u8; 32], ClaimError> {
     // Tie the secret to the committed public account (binding 5).
     let npk = derive_npk(&witness.nsk);

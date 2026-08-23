@@ -173,8 +173,8 @@ Reproduce either result:
 
 ## If the testnet is reset
 
-The public testnet has been reset before (it wiped LP-0005's history). If it is
-reset again:
+The public testnet has been reset before, and a reset wipes deployment history.
+If it is reset again:
 
 - The **deploy** transactions are content-addressed (`SHA256(borsh(bytecode))`),
   so redeploying the committed binaries reproduces the **identical** deploy
@@ -210,5 +210,6 @@ cargo run -p airdrop-cli --bin airdrop -- demo-distribution \
 
 ## Signer
 
-Deployed from the wallet signer used for the LP-0005 work; the deploy
-transactions are content-addressed and independent of the signer.
+The deploy transactions are content-addressed: a deployment carries only the
+bytecode, with no signer and no nonce, so the hash is reproducible from the
+committed artifact by anyone.

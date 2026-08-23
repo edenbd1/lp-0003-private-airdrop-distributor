@@ -25,3 +25,10 @@ app/build
 # even if a new work directory is missed above.
 recipients.json
 *.args
+
+# Production files: the shooting script and the working draft of the
+# submission live outside this repository. Both are build inputs, both were
+# in French with stage directions, and one of them carried a line about other
+# submissions to this programme that has no business in a public repository.
+SUBMISSION-DRAFT.md
+VIDEO_SCRIPT.*
