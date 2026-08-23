@@ -187,4 +187,7 @@ project builds against.
 
 ## License
 
-MIT OR Apache-2.0.
+Dual-licensed under the MIT License **or** the Apache License 2.0, at your
+option. The full text of each is in [`LICENSE-MIT`](LICENSE-MIT) and
+[`LICENSE-APACHE`](LICENSE-APACHE). You may use this software under either;
+you are not required to comply with both.
