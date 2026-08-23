@@ -101,9 +101,31 @@ for pair in "claim program:$CLAIM_LEZ_BIN" "verifier program:$VERIFIER_BIN"; do
 done
 echo
 
+# Steps 4 and 5 derive the marker PDA from all three of these. With one missing
+# the derivation still runs, lands on a PDA that belongs to nobody, and step 5
+# reports an ownership mismatch — which reads as "this claim is not real" rather
+# than "you left out a variable". Refuse instead: a check that fails for the
+# wrong reason is worse than one that does not run.
+if [ -n "$CLAIM_TX" ]; then
+  missing=""
+  [ -z "$NULLIFIER" ]       && missing="$missing NULLIFIER"
+  [ -z "$DISTRIBUTION_ID" ] && missing="$missing DISTRIBUTION_ID"
+  if [ -n "$missing" ]; then
+    echo "CLAIM_TX is set but$missing is not, and steps 4-5 cannot derive the" >&2
+    echo "marker PDA without it. The full command is in docs/DEPLOYMENT.md:" >&2
+    echo >&2
+    echo "  CLAIM_TX=<hash> \\" >&2
+    echo "  NULLIFIER=<hex> \\" >&2
+    echo "  DISTRIBUTION_ID=<hex> \\" >&2
+    echo "  ./scripts/verify-onchain-claim.sh" >&2
+    exit 2
+  fi
+fi
+
 if [ -z "$CLAIM_TX" ]; then
   echo "[2-5] skipped: no CLAIM_TX set. Run scripts/deploy-and-claim.sh first, or"
-  echo "      pass CLAIM_TX=<hash> NULLIFIER=<hex> ./scripts/verify-onchain-claim.sh"
+  echo "      pass CLAIM_TX=<hash> NULLIFIER=<hex> DISTRIBUTION_ID=<hex> \\"
+  echo "           ./scripts/verify-onchain-claim.sh"
   echo
   [ "$FAILED" -eq 0 ] && { echo "Program deployments verified."; exit 0; } || exit 1
 fi
