@@ -81,10 +81,11 @@ step, and how to re-verify are in [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md).
 ## Quickstart
 
 From a clean clone, with a Rust toolchain, `python3`, and `curl` + `jq` for the
-final step's live chain read (and, for step 3's deployed-binary tests, the risc0
-VM `r0vm` from `cargo risczero install`; the step is skipped with a note if it is
-absent, and the closing summary says so). The demo checks each of these by name
-in step 0 and tells you which is missing:
+final step's live chain read. Step 3 additionally needs the risc0 VM `r0vm`; step
+0 installs it with `rzup` when it can, and when it cannot, the run exits **3** and
+says which step did not run — a step that was not run is never reported as a step
+that passed. The demo checks every dependency by name in step 0 and tells you
+which is missing:
 
 ```
 ./scripts/demo.sh
