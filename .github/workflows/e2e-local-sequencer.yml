@@ -7,24 +7,40 @@ name: e2e vs local sequencer
 #
 # Separate from the main CI workflow on purpose. That one is a few minutes and
 # gates every push; this one builds the whole logos-execution-zone workspace and
-# then generates an actual proof, so it runs on a schedule and on demand rather
-# than blocking a push. Both are CI; only one of them can be fast.
+# then generates an actual proof, so it takes about an hour and a quarter. Both
+# run on every commit to the default branch; only one of them can be fast, and
+# only the fast one is a required check.
 
 on:
+  # On every commit that reaches the default branch, and on every release tag, so
+  # a given revision has its own run of this job rather than inheriting one from
+  # whichever nightly happened to catch it. That is the difference between "this
+  # project runs a standalone-sequencer e2e" and "this commit was e2e-tested",
+  # and only the second is checkable from a permalink.
+  push:
+    branches: [main]
+    tags: ['v*']
   workflow_dispatch:
   schedule:
     # 04:40 UTC daily. Nothing depends on the hour; it is off-peak for runners.
+    # Kept alongside the push trigger: it is what catches upstream drift on a
+    # commit that has not changed, which is how this job has actually gone red.
     - cron: '40 4 * * *'
-  # Deliberately not on `push`: this job builds the whole logos-execution-zone
-  # workspace and then generates a real proof, so it runs ~an hour. Gating every
-  # push on it would be wrong, and a heavy environment-sensitive job has no place
-  # on the default branch's status checks. The fast per-push coverage
-  # (`ci.yml`, which runs the deployed binary through the sequencer's executor)
-  # gates pushes; this one runs on a schedule and on demand.
+
+  # No `paths` filter, on purpose. A path filter would mark this check "skipped"
+  # on a docs-only commit, and a skipped check is indistinguishable, from the
+  # outside, from a test that was never run. Measured run time is 58-80 min
+  # (median ~76) on a public-repo runner, which is free, so the whole cost of
+  # running it unconditionally is wall-clock nobody is waiting on: `ci.yml` is
+  # the few-minute gate, and this one is not a required status check.
 
 concurrency:
-  group: e2e-local-sequencer-${{ github.ref }}
-  cancel-in-progress: true
+  # Keyed on the commit, not the ref, and never cancelled. On a ref key, a second
+  # push to main would cancel the first commit's run — and a cancelled run reads
+  # as "did not run" to anyone auditing the history, which is exactly the claim
+  # this job exists to make unambiguous.
+  group: e2e-local-sequencer-${{ github.sha }}
+  cancel-in-progress: false
 
 env:
   # The revision this was developed and verified against — v0.2.4. Floating HEAD

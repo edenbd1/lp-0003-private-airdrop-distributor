@@ -1,9 +1,15 @@
 #!/usr/bin/env bash
 # Generate ONE real claim proof, end to end on the public testnet, with
-# RISC0_DEV_MODE=0, and verify it on chain. This is the proof that demo.sh does
-# not generate: demo.sh runs the adversarial suites through the executor (which
+# RISC0_DEV_MODE=0, verify it on chain, then submit the identical claim a second
+# time and require it to be refused. This is the proof that demo.sh does not
+# generate: demo.sh runs the adversarial suites through the executor (which
 # execute, they do not prove), while this script produces a real STARK on the
 # privacy path. It is the narrated video's proof-generation scene.
+#
+# Six steps, and the last one is the double-claim guard demonstrated rather than
+# asserted: step 6 rebuilds the same claim under a different signer, and the run
+# fails if that produces a transaction instead of AccountAlreadyInitialized. It
+# needs no pre-existing marker, because step 4 has just created one.
 #
 #   SIGNER=<funded public id> ./scripts/prove-one-claim.sh
 # Needs the v0.2.4 wallet (WALLET_BIN) and the vendored spel (SPEL_BIN) on hand.
@@ -94,4 +100,43 @@ for _ in $(seq 1 25); do sleep 10; confirmed "$TX" && { echo "  landed"; break; 
 rule "5. verify the fresh claim on chain (5 checks)"
 CLAIM_TX="$TX" NULLIFIER="$NULL" DISTRIBUTION_ID="$ID" ./scripts/verify-onchain-claim.sh
 
-printf '\n\033[1ma real proof was generated with RISC0_DEV_MODE=0 and verified on chain\033[0m\n'
+rule "6. the same claim, a second time - the double-claim guard, live"
+# The marker PDA for this nullifier is now on chain, so the identical claim must
+# not merely be rejected once it lands: it must fail to build at all. The marker
+# is an `init` account, so the verifier's own account validation panics inside
+# the guest and no proof - and therefore no transaction - can be produced. This
+# costs seconds, not the minutes step 4 took: the guest panics during execution,
+# long before proving starts.
+#
+# Deliberately a *different* signer from step 4. The guard is bound to the
+# recipient's nullifier, not to whoever submits, and a rerun under the same
+# throwaway account could not tell those two apart.
+CW2=$(mktemp -d)
+printf '{ "sequencers": [{ "sequencer_addr": "%s" }], "seq_poll_timeout": "30s", "seq_tx_poll_max_blocks": 15, "seq_poll_max_retries": 10, "seq_block_poll_max_amount": 100, "calibration_limit": 100 }\n' "$RPC" > "$CW2/wallet_config.json"
+export LEE_WALLET_HOME_DIR="$CW2" NSSA_WALLET_HOME_DIR="$CW2"
+"$WALLET" account new private </dev/null >/dev/null 2>&1
+CLAIMANT2=$("$WALLET" account list </dev/null 2>/dev/null \
+  | grep -oE 'Private/[1-9A-HJ-NP-Za-km-z]+' | sed 's|Private/||' | tail -n1)
+"$WALLET" account sync-private >/dev/null 2>&1 || true
+echo "resubmitting the identical claim, as a different signer ..."
+OUT2=$(eval $SPEL --idl "$IDL" --program "$VERIFIER" --bin-claimlez "$CLAIM_LEZ" \
+  -- claim --claimant "Private/$CLAIMANT2" $FLAT 2>&1) || true
+TX2=$(echo "$OUT2" | grep -o 'tx_hash: [0-9a-f]\{64\}' | head -1 | cut -d' ' -f2)
+if [ -n "$TX2" ]; then
+  echo "$OUT2" | tail -10
+  echo "FAIL: the second claim produced transaction $TX2 - the double-claim guard did not hold" >&2
+  exit 1
+fi
+if echo "$OUT2" | grep -q 'AccountAlreadyInitialized'; then
+  echo "$OUT2" | grep -m2 -E 'AccountAlreadyInitialized|ProgramProveFailed' | sed 's/^/   /'
+  echo "   rejected: the marker PDA for this nullifier is already initialised, so no"
+  echo "   second transaction exists. One recipient, one claim."
+else
+  echo "$OUT2" | tail -10
+  echo "FAIL: the second claim produced no transaction, but not for the expected reason" >&2
+  echo "      (wanted AccountAlreadyInitialized from the verifier's account validation)" >&2
+  exit 1
+fi
+
+printf '\n\033[1ma real proof was generated with RISC0_DEV_MODE=0 and verified on chain,\033[0m\n'
+printf '\033[1mand the same claim a second time could not even be built\033[0m\n'

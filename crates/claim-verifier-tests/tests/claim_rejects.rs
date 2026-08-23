@@ -30,7 +30,6 @@ const ELF_PATH: &str = "../../artifacts/programs/claim_verifier.bin";
 /// encodes the variant index as a leading u32, then the fields in order.
 #[derive(Serialize)]
 enum VerifierInstruction {
-    #[allow(dead_code)]
     CreateDistribution {
         distribution_id: [u8; 32],
         eligibility_root: [u8; 32],
@@ -276,10 +275,68 @@ fn report_the_claim_cycle_cost() {
     let session = Scenario::honest(&pid)
         .measured_session(&elf, &pid)
         .expect("honest claim executes");
+    report_cycles("claim verifier, guest execution only", &session);
+}
+
+/// The same measurement for the other on-chain operation. The Performance
+/// criterion asks for the CU cost of *each* operation; until this existed
+/// `create_distribution` was described ("lighter still") rather than counted, and
+/// a description is not a measurement. Same committed binary, same executor, same
+/// 32M session limit — only the instruction differs.
+///
+/// Run with: `cargo test -p claim-verifier-tests --test claim_rejects -- --ignored --nocapture`
+#[test]
+#[ignore = "reports a measurement rather than asserting a property"]
+fn report_the_create_distribution_cycle_cost() {
+    let elf = elf();
+    let pid = program_id(&elf);
+
+    let distribution_id = [0xD1; 32];
+    let eligibility_root = [0xE1; 32];
+    let instruction = VerifierInstruction::CreateDistribution {
+        distribution_id,
+        eligibility_root,
+    };
+
+    // Declaration order: distribution (init PDA seeded by [id, root]), authority
+    // (signer). The distribution account is uninitialised, which is what `init`
+    // requires and what the distributor's first commitment actually looks like.
+    let pre_states = vec![
+        AccountWithMetadata {
+            account: Account::default(),
+            is_authorized: false,
+            account_id: public_pda(&pid, &[distribution_id, eligibility_root]),
+        },
+        AccountWithMetadata {
+            account: Account::default(),
+            is_authorized: true,
+            account_id: AccountId::new([0xA1; 32]),
+        },
+    ];
+
+    let caller: Option<ProgramId> = None;
+    let instruction_data = risc0_zkvm::serde::to_vec(&instruction).expect("encodes");
+
+    let mut builder = ExecutorEnv::builder();
+    builder.session_limit(Some(MAX_NUM_CYCLES_PUBLIC_EXECUTION));
+    builder.write(&pid).expect("program id");
+    builder.write(&caller).expect("caller");
+    builder.write(&pre_states).expect("pre-states");
+    builder.write(&instruction_data).expect("instruction data");
+    let session = default_executor()
+        .execute(builder.build().expect("env"), &elf)
+        .expect("create_distribution executes");
+
+    report_cycles("create_distribution, guest execution only", &session);
+}
+
+/// One shape for both measurements, so the two numbers are comparable line for
+/// line and neither can drift into a different definition of "cycles".
+fn report_cycles(title: &str, session: &risc0_zkvm::SessionInfo) {
     let user_cycles: u64 = session.segments.iter().map(|s| u64::from(s.cycles)).sum();
     let proving_cycles: u64 = session.segments.iter().map(|s| 1u64 << s.po2).sum();
     let pct = proving_cycles as f64 / MAX_NUM_CYCLES_PUBLIC_EXECUTION as f64 * 100.0;
-    println!("claim verifier, guest execution only");
+    println!("{title}");
     println!("  segments        {}", session.segments.len());
     println!("  user cycles     {user_cycles}");
     println!("  proving cycles  {proving_cycles}");
