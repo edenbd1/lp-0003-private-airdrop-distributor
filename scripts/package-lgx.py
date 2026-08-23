@@ -51,6 +51,7 @@ import subprocess
 import sys
 import tarfile
 import tempfile
+import pathlib
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -256,7 +257,13 @@ def main() -> int:
         return 1 if self_test() else 0
 
     if args.verify:
-        pkg = ROOT / args.verify
+        # Resolve against the working directory first, and only then against
+        # the repository. The release notes tell a reviewer to run this on a
+        # package they just downloaded into some other directory; anchoring on
+        # ROOT made that instruction fail with "no such package" while pointing
+        # at a path they never typed.
+        cand = pathlib.Path(args.verify)
+        pkg = cand if cand.is_file() else (ROOT / args.verify)
         if not pkg.is_file():
             print(f"no such package: {pkg}", file=sys.stderr)
             return 1
