@@ -4,7 +4,7 @@ project(lp_0003_airdrop LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-# Two build paths (same pattern as LP-0017's whistleblower plugin):
+# Two build paths, which is the shape a Basecamp ui plugin needs:
 #
 # 1. Framework build — when $LOGOS_MODULE_BUILDER_ROOT is set (i.e.
 #    inside the logos-module-builder Nix dev shell), include
