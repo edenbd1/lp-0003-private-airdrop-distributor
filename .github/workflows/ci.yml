@@ -145,6 +145,14 @@ jobs:
       # cited a different entry's plugin in a build comment. Neither was
       # noticed, because the one check that looks for this lived in a single
       # repository out of three and was run by nothing.
+      # A published digest beside a path is a checkable claim, and this
+      # repository published a wrong one: app/README.md named a package hash from
+      # before the package was last built, so a reviewer who recomputed it found
+      # the submission contradicting itself. The check existed in a sibling
+      # repository, where the same thing had already happened.
+      - name: Every quoted digest is that file's
+        run: python3 scripts/check-quoted-hashes.py
+
       - name: Nothing here names a different prize entry
         env:
           OWN_PRIZE: LP-0003

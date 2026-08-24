@@ -100,7 +100,7 @@ that is all the chain records.
 
 ## Packaged asset
 
-`app/lp-0003-airdrop.lgx` (1.2 MB, SHA-256 `cd999028b4461539880c19f755c1ab2fe667c2c2c2e1c03dbd6419c154b08955`)
+`app/lp-0003-airdrop.lgx` (1.2 MB, SHA-256 `3d129c9ac58a2f8c20343fc84daae2083061e7f20e990d8bdcab8884d8b54581`)
 is the packaged module. It carries **two variants** — `darwin-arm64` and
 `linux-amd64` — each with the plugin library, the QML view, the module metadata,
 and the `airdrop` CLI the bridge drives. Basecamp selects the one matching the
