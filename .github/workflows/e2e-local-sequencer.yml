@@ -77,10 +77,30 @@ jobs:
           restore-keys: lez-${{ runner.os }}-${{ env.LEZ_REV }}-
 
       - name: Install r0vm
+        # rzup downloads r0vm through api.github.com unauthenticated, so it is
+        # rate-limited by runner IP and shared with everyone else on that host.
+        # It failed once here with "Remote error: api.github.com" on the tag
+        # push while the same commit went green from the branch push minutes
+        # earlier — a red run on the pinned commit, from a network flake.
+        #
+        # Three attempts with backoff, and GITHUB_TOKEN so the download is
+        # authenticated rather than anonymous. It still fails the job if all
+        # three fail: this proof cannot be built without r0vm, and a job that
+        # continued without it would be reporting green on nothing.
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           curl -L https://risczero.com/install | bash
           echo "$HOME/.risc0/bin" >> "$GITHUB_PATH"
-          "$HOME/.risc0/bin/rzup" install r0vm 3.0.5
+          for attempt in 1 2 3; do
+            if "$HOME/.risc0/bin/rzup" install r0vm 3.0.5; then
+              exit 0
+            fi
+            echo "rzup attempt $attempt failed; retrying in $((attempt * 20))s"
+            sleep $((attempt * 20))
+          done
+          echo "rzup could not install r0vm after three attempts" >&2
+          exit 1
 
       # v0.2.4 builds lez/keycard_wallet, which links against PC/SC. Taken from
       # LEZ's own ci.Dockerfile rather than assembled one package per failure.
