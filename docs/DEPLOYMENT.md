@@ -138,6 +138,16 @@ keeps working if the explorer returns to client-side rendering. If the control
 ever renders as a *found* transaction the script aborts rather than report
 anything, because the baseline every verdict rests on would be invalid.
 
+**Which of these actually runs.** `scripts/check-chain-refs.py` resolves every
+explorer link in these documents through the node on every markdown push, and
+once a day it also fetches each transaction page and compares it against a
+freshly measured not-found shell — no browser, so it runs in CI rather than by
+hand. `scripts/check-explorer.py` drives a real browser and remains the stronger
+second opinion, but nothing schedules it: run it yourself when a rendering
+question matters. A gate that runs and a gate that could are not the same thing,
+and this says which is which.
+
+
 ### It indexes these transactions, but not immediately
 
 Measured on this deployment: the claim program's deploy, confirmed on chain at
