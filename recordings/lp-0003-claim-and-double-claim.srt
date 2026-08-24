@@ -1,0 +1,48 @@
+1
+00:00:00,000 --> 00:00:03,884
+This is LP-0003, at the commit on screen, with a
+
+2
+00:00:03,884 --> 00:00:07,040
+clean tree. Real proofs: dev mode is 0.
+
+3
+00:00:08,240 --> 00:00:10,266
+One claim, proved locally on this machine, then
+
+4
+00:00:10,266 --> 00:00:11,560
+submitted on the privacy path.
+
+5
+00:00:12,760 --> 00:00:16,118
+The proof is done and the claim landed. Five checks
+
+6
+00:00:16,118 --> 00:00:19,016
+confirm it: privacy-preserving, a real STARK
+
+7
+00:00:19,016 --> 00:00:22,440
+receipt, and a marker account owned by the verifier.
+
+8
+00:00:23,640 --> 00:00:27,279
+Now the same claim a second time. Refused — the
+
+9
+00:00:27,279 --> 00:00:30,841
+marker already exists, so a second transaction
+
+10
+00:00:30,841 --> 00:00:34,480
+cannot even be built. One recipient, one claim.
+
+11
+00:00:35,680 --> 00:00:39,434
+All of it is live on the public LEZ testnet, and the
+
+12
+00:00:39,434 --> 00:00:42,971
+script is in the repository. Thanks for watching.
+

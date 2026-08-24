@@ -29,8 +29,8 @@ on:
 
   # No `paths` filter, on purpose. A path filter would mark this check "skipped"
   # on a docs-only commit, and a skipped check is indistinguishable, from the
-  # outside, from a test that was never run. Measured run time is 58-80 min
-  # (median ~76) on a public-repo runner, which is free, so the whole cost of
+  # outside, from a test that was never run. Measured over the 18 green runs in this
+  # workflow's history: 27-126 min, median 73, on a public-repo runner, which is free, so the whole cost of
   # running it unconditionally is wall-clock nobody is waiting on: `ci.yml` is
   # the few-minute gate, and this one is not a required status check.
 
