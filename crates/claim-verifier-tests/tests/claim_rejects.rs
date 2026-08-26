@@ -139,17 +139,32 @@ impl Scenario {
     }
 
     fn run(&self, elf: &[u8], pid: &ProgramId) -> anyhow::Result<()> {
+        let words = risc0_zkvm::serde::to_vec(&airdrop_core::ClaimInstruction {
+            witness: self.witness.clone(),
+            statement: ClaimStatement {
+                distribution_root: self.distribution_root,
+                distribution_id: self.distribution_id,
+                allocation: self.allocation,
+                nullifier: self.nullifier,
+                destination: self.witness.destination,
+            },
+        })?;
+        self.run_with_witness_words(elf, pid, words)
+    }
+
+    /// The same execution, with the witness words supplied rather than derived
+    /// from `self.witness`. It exists because `E_BAD_WITNESS` fires on the
+    /// decode, before any binding this file otherwise exercises — so there is no
+    /// way to reach it by mutating a well-formed claim, and it was the one
+    /// documented code with no test behind it.
+    fn run_with_witness_words(
+        &self,
+        elf: &[u8],
+        pid: &ProgramId,
+        witness_words: Vec<u32>,
+    ) -> anyhow::Result<()> {
         let instruction = VerifierInstruction::Claim {
-            witness_words: risc0_zkvm::serde::to_vec(&airdrop_core::ClaimInstruction {
-                witness: self.witness.clone(),
-                statement: ClaimStatement {
-                    distribution_root: self.distribution_root,
-                    distribution_id: self.distribution_id,
-                    allocation: self.allocation,
-                    nullifier: self.nullifier,
-                    destination: self.witness.destination,
-                },
-            })?,
+            witness_words,
             distribution_root: self.distribution_root,
             distribution_id: self.distribution_id,
             allocation: self.allocation,
@@ -500,5 +515,55 @@ fn a_forged_marker_seed_is_rejected() {
     assert!(
         msg.contains("4004") || msg.to_lowercase().contains("marker"),
         "expected the marker-seed rejection, got: {msg}"
+    );
+}
+
+/// `E_BAD_WITNESS` (4001): witness words that do not decode as a
+/// `ClaimInstruction`.
+///
+/// Every other code in `docs/error-codes.md` is reached by mutating a
+/// well-formed claim. This one cannot be: it fires on the decode itself, before
+/// the statement, the anchoring or the marker are looked at. So it was the one
+/// documented code that nothing exercised — the doc said what it means and the
+/// guest declared it, and no test had ever watched it fire.
+///
+/// The words here are a plausible-looking prefix rather than noise: a claim
+/// whose serialisation was truncated is the realistic way to arrive at this
+/// code, and it is the case a reader of the doc's advice ("wire-format drift;
+/// regenerate the claim arguments with the current CLI") is being told about.
+#[test]
+fn undecodable_witness_words_are_refused_before_anything_else_is_read() {
+    let elf = elf();
+    let pid = program_id(&elf);
+    let honest = Scenario::honest(&pid);
+
+    let mut words = risc0_zkvm::serde::to_vec(&airdrop_core::ClaimInstruction {
+        witness: honest.witness.clone(),
+        statement: ClaimStatement {
+            distribution_root: honest.distribution_root,
+            distribution_id: honest.distribution_id,
+            allocation: honest.allocation,
+            nullifier: honest.nullifier,
+            destination: honest.witness.destination,
+        },
+    })
+    .expect("the honest witness serialises");
+    assert!(
+        words.len() > 8,
+        "the honest witness is longer than the truncation"
+    );
+    words.truncate(words.len() / 2);
+
+    let err = honest
+        .run_with_witness_words(&elf, &pid, words)
+        .expect_err("a witness that does not decode must be refused");
+    let msg = format!("{err:#}");
+    // The code and nothing looser. An `|| contains("witness")` here would pass
+    // on any message that happens to name the witness, including the ones the
+    // other rejections print, so it would stop distinguishing this code from
+    // its neighbours — which is the whole reason the test exists.
+    assert!(
+        msg.contains("4001"),
+        "expected program error 4001, got: {msg}"
     );
 }
