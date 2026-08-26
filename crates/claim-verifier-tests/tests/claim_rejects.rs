@@ -404,7 +404,7 @@ fn an_unanchored_root_is_rejected() {
         .expect_err("an invented root must be rejected");
     let msg = format!("{err:#}");
     assert!(
-        msg.contains("4003") || msg.to_lowercase().contains("anchor"),
+        msg.contains("4003"),
         "expected the not-anchored rejection, got: {msg}"
     );
 }
@@ -435,7 +435,7 @@ fn a_distribution_owned_by_another_program_is_rejected() {
         .expect_err("a distribution owned by another program must be rejected");
     let msg = format!("{err:#}");
     assert!(
-        msg.contains("4003") || msg.to_lowercase().contains("anchor"),
+        msg.contains("4003"),
         "expected the not-anchored rejection, got: {msg}"
     );
 }
@@ -456,7 +456,7 @@ fn a_forged_nullifier_is_rejected() {
         .expect_err("a forged nullifier must be rejected");
     let msg = format!("{err:#}");
     assert!(
-        msg.contains("4002") || msg.to_lowercase().contains("nullifier"),
+        msg.contains("4002"),
         "expected the nullifier rejection, got: {msg}"
     );
 }
@@ -474,7 +474,7 @@ fn an_inflated_allocation_is_rejected() {
         .expect_err("an inflated allocation must be rejected");
     let msg = format!("{err:#}");
     assert!(
-        msg.contains("4006") || msg.to_lowercase().contains("allocation"),
+        msg.contains("4006"),
         "expected the allocation rejection, got: {msg}"
     );
 }
@@ -513,7 +513,7 @@ fn a_forged_marker_seed_is_rejected() {
         .expect_err("a forged marker seed must be rejected");
     let msg = format!("{err:#}");
     assert!(
-        msg.contains("4004") || msg.to_lowercase().contains("marker"),
+        msg.contains("4004"),
         "expected the marker-seed rejection, got: {msg}"
     );
 }

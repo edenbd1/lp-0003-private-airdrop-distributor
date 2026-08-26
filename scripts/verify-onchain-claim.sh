@@ -88,7 +88,7 @@ echo "LP-0003 on-chain claim verification"
 echo "sequencer: $RPC"
 echo
 
-echo "[1/5] the deployed bytecode is the bytecode in this repository"
+echo "[1/6] the deployed bytecode is the bytecode in this repository"
 for pair in "claim program:$CLAIM_LEZ_BIN" "verifier program:$VERIFIER_BIN"; do
   name="${pair%%:*}"; bin="${pair#*:}"
   [ -f "$bin" ] || { bad "$name binary missing at $bin"; continue; }
@@ -130,7 +130,7 @@ if [ -z "$CLAIM_TX" ]; then
   [ "$FAILED" -eq 0 ] && { echo "Program deployments verified."; exit 0; } || exit 1
 fi
 
-echo "[2/5] the claim transaction is PrivacyPreserving, not Public"
+echo "[2/6] the claim transaction is PrivacyPreserving, not Public"
 # v0.2.4 getTransaction returns [transaction, block_id]; the transaction is [0].
 TX_B64=$(rpc getTransaction "[\"$CLAIM_TX\"]" | jq -r '.result[0] // empty')
 if [ -z "$TX_B64" ]; then
@@ -143,7 +143,7 @@ else
 fi
 echo
 
-echo "[3/5] the embedded receipt is a Succinct STARK, not a dev-mode fake"
+echo "[3/6] the embedded receipt is a Succinct STARK, not a dev-mode fake"
 if [ -n "$TX_B64" ]; then
   # Read the (large) base64 transaction from stdin, not argv: a claim tx is
   # hundreds of KB, which exceeds the per-argument length limit on Linux.
@@ -166,7 +166,7 @@ print(found)")
 fi
 echo
 
-echo "[4/5] derive the claim marker PDA from the ImageID and the enforced claim"
+echo "[4/6] derive the claim marker PDA from the ImageID and the enforced claim"
 VID=$(image_id "$VERIFIER_BIN")
 [ -n "$VID" ] || VID=31edc17c350735a61205eb2c14164b3fa610df57e6c0c87e7180e5d4a110385d
 # The marker seed commits to the distribution and the nullifier:
@@ -194,7 +194,39 @@ ok "distribution     ${DISTRIBUTION_ID:0:16}…"
 ok "derived marker   $MARKER"
 echo
 
-echo "[5/5] that marker PDA is owned by the verifier program"
+echo "[5/6] that marker PDA is one of the accounts THIS transaction touched"
+# Without this, the two halves of the check never meet. Steps 2-3 read CLAIM_TX;
+# step 4 derives the marker from (DISTRIBUTION_ID, NULLIFIER); nothing said the
+# two described the same claim — so pairing one real claim's transaction with
+# another real claim's nullifier printed VERIFIED. An invented nullifier was
+# caught, which is why the hole survived: the easy negative passes.
+#
+# A privacy transaction publishes neither program_id nor instruction_data — that
+# is the property this submission rests on — but it does name the accounts it
+# touches, and the claim marker is one of them. So the join is possible without
+# learning anything the privacy model hides.
+MARKER_RAW=$(python3 -c "
+import sys
+A='123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz'
+n=0
+for c in sys.argv[1]: n=n*58+A.index(c)
+b=n.to_bytes((n.bit_length()+7)//8,'big')
+print((b'\0'*(len(sys.argv[1])-len(sys.argv[1].lstrip('1')))+b).hex())" "$MARKER")
+TX_HEX=$(rpc getTransaction "[\"$CLAIM_TX\"]" | python3 -c "
+import sys,json,base64
+r=json.load(sys.stdin).get('result')
+print(base64.b64decode(r[0]).hex() if r else '')")
+if [ -z "$TX_HEX" ]; then
+  bad "transaction $CLAIM_TX could not be read back for the account check"
+elif printf '%s' "$TX_HEX" | grep -qF "$MARKER_RAW"; then
+  ok "the derived marker is among this transaction's accounts"
+else
+  bad "the derived marker is NOT among this transaction's accounts — the nullifier
+       and the transaction describe different claims"
+fi
+echo
+
+echo "[6/6] that marker PDA is owned by the verifier program"
 EXPECTED=$(python3 -c "
 import sys
 b=bytes.fromhex(sys.argv[1])

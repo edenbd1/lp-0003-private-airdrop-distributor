@@ -43,6 +43,26 @@ fails them. Defined in `crates/airdrop-core/src/lib.rs`.
 | `AllocationMismatch` | The statement allocation disagrees with the witness. |
 | `NullifierMismatch` | The statement nullifier is not the one the witness yields. |
 
+## The double-claim rejection, which carries no `4xxx` code
+
+A second claim by the same recipient is refused **before the guest runs**, by the
+account constraint on the marker: it is declared `init`, so a marker that already
+exists makes the instruction fail with LEZ's own
+`AccountAlreadyInitialized { account_index: 0 }`. There is no `4xxx` for it and
+there should not be — inventing one would mean the program had been reached,
+which would mean the guard had already been passed.
+
+| What fires | Where it comes from | The test that watches it fire |
+|---|---|---|
+| `AccountAlreadyInitialized` | the LEZ account model, on the `init` marker | `a_second_claim_on_an_initialized_marker_is_rejected` |
+
+The criterion asks for deterministic, documented error codes for the invalid-proof
+and double-claim scenarios. Both are deterministic; this one is documented here
+rather than in the table above because it is not the program's to number, and
+saying so is more useful than a code that would misdescribe where the refusal
+happens. It is also demonstrated live on chain, under a *different* signer, so
+what refuses is the marker and not the submitter.
+
 ## What is never in an error
 
 No error message contains a field of `ClaimWitness`: not `nsk`, not `salt`, not
