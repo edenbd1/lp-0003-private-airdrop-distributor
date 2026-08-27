@@ -97,7 +97,7 @@ TX=$(echo "$OUT" | grep -o 'tx_hash: [0-9a-f]\{64\}' | head -1 | cut -d' ' -f2)
 printf 'claim tx %s  (proved + submitted in %ss)\n' "$TX" "$(python3 -c "print(f'{$END-$START:.0f}')")"
 for _ in $(seq 1 25); do sleep 10; confirmed "$TX" && { echo "  landed"; break; }; done
 
-rule "5. verify the fresh claim on chain (5 checks)"
+rule "5. verify the fresh claim on chain (6 checks)"
 CLAIM_TX="$TX" NULLIFIER="$NULL" DISTRIBUTION_ID="$ID" ./scripts/verify-onchain-claim.sh
 
 rule "6. the same claim, a second time - the double-claim guard, live"

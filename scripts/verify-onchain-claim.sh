@@ -15,7 +15,7 @@
 #
 #   ./scripts/verify-onchain-claim.sh
 #
-# The five checks:
+# The six checks:
 #   1. The deployed bytecode IS the bytecode here. A deploy tx hash is
 #      SHA256(borsh(bytecode)); recomputing it from the local file and finding it
 #      on chain proves the deployed program is byte-identical.
@@ -28,7 +28,12 @@
 #      nullifier, not asserted. The nullifier is submitter-supplied (a function of
 #      the recipient secret), so a third party cannot reconstruct it; what this
 #      establishes is that the marker at this address encodes this claim.
-#   5. That marker PDA is owned by the verifier program. program_owner cannot be
+#   5. That marker PDA is among the accounts THIS transaction touched. Without
+#      it the two halves never meet: checks 2-3 read the transaction, check 4
+#      derives the marker, and nothing said the two described the same claim.
+#      Pairing one real claim's transaction with another's nullifier passed
+#      every other check until this one existed.
+#   6. That marker PDA is owned by the verifier program. program_owner cannot be
 #      forged.
 
 set -uo pipefail
@@ -123,7 +128,7 @@ if [ -n "$CLAIM_TX" ]; then
 fi
 
 if [ -z "$CLAIM_TX" ]; then
-  echo "[2-5] skipped: no CLAIM_TX set. Run scripts/deploy-and-claim.sh first, or"
+  echo "[2-6] skipped: no CLAIM_TX set. Run scripts/deploy-and-claim.sh first, or"
   echo "      pass CLAIM_TX=<hash> NULLIFIER=<hex> DISTRIBUTION_ID=<hex> \\"
   echo "           ./scripts/verify-onchain-claim.sh"
   echo

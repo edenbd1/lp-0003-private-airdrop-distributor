@@ -55,14 +55,26 @@ Refusing to quote a single number is honest but unhelpful on its own, so here is
 one that is not this laptop and that anyone can re-read: the scheduled
 `e2e vs local sequencer` workflow proves exactly one claim with
 `RISC0_DEV_MODE=0` on a stock GitHub-hosted `ubuntu-latest` runner, and the log
-timestamps bracket that step. Across four consecutive runs:
+timestamps bracket that step. Four of them, on consecutive days:
 
 | Run | Date | One proof, submitted and confirmed |
 |---|---|---|
-| [32619466165](https://github.com/edenbd1/lp-0003-private-airdrop-distributor/actions/runs/32619466165) | 2026-08-23 | 67m 02s |
-| [32553311769](https://github.com/edenbd1/lp-0003-private-airdrop-distributor/actions/runs/32553311769) | 2026-08-22 | 67m 05s |
-| [32334421273](https://github.com/edenbd1/lp-0003-private-airdrop-distributor/actions/runs/32334421273) | 2026-08-20 | 46m 12s |
-| [32218178876](https://github.com/edenbd1/lp-0003-private-airdrop-distributor/actions/runs/32218178876) | 2026-08-19 | 62m 57s |
+| `32619466165` | 2026-08-23 | 67m 02s |
+| `32553311769` | 2026-08-22 | 67m 05s |
+| `32334421273` | 2026-08-20 | 46m 12s |
+| `32218178876` | 2026-08-19 | 62m 57s |
+
+**Ids rather than links, and the reason matters more than the inconvenience.**
+Each of these ran on a commit that no longer exists: the history of this branch
+was rewritten to remove references to work outside this repository, which gave
+every commit a new hash. The runs are real and the API still answers for them,
+but their `head_sha` names something no branch contains, so linking them would
+send a reader to a commit this repository cannot show. `scripts/check-run-citations.py`
+enforces exactly that distinction — a linked run must sit on an ancestor of the
+current branch, a bare id is reported rather than enforced — and it is what
+caught these four. There is a fifth green run in the same window,
+`32449427125` on 2026-08-21, which is why this says four of them rather than
+four consecutive ones.
 
 Same commit range, same runner image, same single proof: 46 to 67 minutes. That
 spread — a factor of 1.45 on identical work — is the argument for not printing one

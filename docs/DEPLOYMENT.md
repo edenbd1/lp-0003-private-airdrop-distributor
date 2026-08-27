@@ -147,6 +147,11 @@ second opinion, but nothing schedules it: run it yourself when a rendering
 question matters. A gate that runs and a gate that could are not the same thing,
 and this says which is which.
 
+The most recent green pass is
+[run 33084394804](https://github.com/edenbd1/lp-0003-private-airdrop-distributor/actions/runs/33084394804),
+on the reviewed commit itself — every explorer link in this repository resolved
+against the node on the tree you are reading.
+
 
 ### It indexes these transactions, but not immediately
 
