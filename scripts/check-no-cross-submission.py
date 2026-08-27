@@ -16,7 +16,7 @@ It has already been wrong here. `scripts/check-transcript.py` shipped an anchor
 table with an entry for three different films, two of them belonging to other
 submissions, and their filenames sat in the source for anyone who opened the
 script. Nothing flagged it, because the only check that looks for this lived in
-one repository out of three and had never been run.
+this repository and had never been run.
 
 WHAT IT LOOKS FOR
 
@@ -96,6 +96,33 @@ def main():
         print("\nEach is either a leak to delete or a deliberate mention to record in\n"
               "EXPECTED with its reason. Deciding once and writing it down is the point.")
         return 1
+    # The tree is only half of what a reader can see. `git log` is one command
+    # away, and a commit message is not a tracked file — git grep never reaches
+    # it, so a name deleted from a file goes on living in the commit that
+    # deleted it. This half is opt-in because clearing it means rewriting
+    # history, which is a decision, not a cleanup.
+    if "--history" in sys.argv:
+        log = subprocess.run(["git", "log", "--all", "--format=%H%x1f%s%x1f%b%x1e"],
+                             cwd=ROOT, capture_output=True, text=True).stdout
+        rx = re.compile(pattern)
+        bad = []
+        for entry in log.split("\x1e"):
+            if not entry.strip():
+                continue
+            sha, subject, body = (entry.strip().split("\x1f") + ["", ""])[:3]
+            for line in (subject + "\n" + body).splitlines():
+                if rx.search(line):
+                    bad.append((sha[:7], line.strip()))
+        print("scanned %d commit message(s)" % len(log.split("\x1e")))
+        if bad:
+            print("\n%d commit message(s) name another submission:\n" % len(bad))
+            for sha, line in bad[:20]:
+                print("  %s  %s" % (sha, line[:120]))
+            print("\nA file can be edited. A commit message can only be rewritten, which\n"
+                  "changes every hash after it — including the one the submission pins\n"
+                  "and the ones its green CI runs were recorded against.")
+            return 1
+
     print("nothing in this tree points at another submission")
     return 0
 

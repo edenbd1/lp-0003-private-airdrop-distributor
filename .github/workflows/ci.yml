@@ -18,7 +18,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
 
-      # This repository was the only one of the family whose CI checked neither
+      # This repository's CI checked neither
       # formatting nor lints, and it had drifted: 23 unformatted spots across
       # seven files, plus a `needless_question_mark` clippy error. Both are fixed;
       # these steps are what stops them coming back. Clippy prints its own version

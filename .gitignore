@@ -5,7 +5,7 @@
 
 # Generated work directories. Globs, not an enumeration: a new .demo-<x> from a
 # future script must not slip through (this is the exact fragility that leaked a
-# secret on a sibling submission). These hold recipients.json and *.args, which
+# secret in another repository). These hold recipients.json and *.args, which
 # carry recipient secrets.
 .work
 /.demo*/
