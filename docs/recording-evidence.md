@@ -43,9 +43,15 @@ The film was shot at
 [`7f0530e`](https://github.com/edenbd1/lp-0003-private-airdrop-distributor/commit/7f0530e66d073db1c32e32ce6be05065d882262c)
 and shows that hash on screen in its opening seconds, over a clean tree. The
 reviewed commit is later, because the transcript of a film can only be committed
-after the film exists. What separates them is this document, the transcript, the
-checker, and a stale duration figure corrected in two places — no program, no
-script the demo runs, no artefact the chain sees. `git diff` between the two
+after the film exists. What separates them is nineteen files and 1,665 lines, and the honest
+summary is not "documentation only". The two program binaries under
+`artifacts/programs/` are unchanged, so the chain sees the same thing — but
+`scripts/verify-onchain-claim.sh` gained a step the film does not show, and the
+film demonstrates the five-check version. That step closes a real hole: the
+script used to print VERIFIED when given one claim's transaction paired with
+another claim's nullifier, because the two halves of the check never met. So the
+film shows a correct run of a script that has since been made stricter, not a run
+of the script a reviewer will get. `git diff` between the two
 says so in 5 files.
 
 ## What this does not establish

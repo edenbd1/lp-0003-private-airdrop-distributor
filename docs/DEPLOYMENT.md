@@ -164,15 +164,22 @@ Once indexed, a claim renders like this:
 Type: Privacy-Preserving Transaction
 Public Accounts: 2    Private Actions: 7    Proof Size: 260947 bytes
 Public Accounts: B4VTZUENS1Ckmaiv8h44QcU5r276pEgTE2nEwGSGsf16
+                6cPhtwbqHVVTeGXaRNKU1UJw9HtY855pPipNavLawEHz
 ```
 
-No `program_id`, no `instruction_data`, no distribution id, no recipient address —
-only the marker PDA. That is a third party's public rendering of exactly what this
-submission claims: an observer can see that *a* privacy transaction occurred and
-that it carries a real proof, and can see the marker it claimed, but cannot tell
-which distribution it concerns or whose address is behind it. A public deployment
-transaction, by contrast, renders its bytecode size, because nothing about it is
-private.
+Both accounts, because there are two and quoting one would flatter this. The
+first is the claim marker; the second is the distribution PDA, which a claim must
+touch — its address *is* `[distribution_id, root]`, so the distribution is
+visible by construction and no design could hide it while still anchoring the
+root by address.
+
+What is absent is what matters: no `program_id`, no `instruction_data`, no
+recipient address, and nothing that maps the marker back to one. An observer sees
+that a privacy transaction occurred against a known distribution, carrying a real
+proof — and cannot tell *which member of that eligibility set* claimed, which is
+the property `docs/privacy-model.md` states and the only one worth claiming. A
+public deployment transaction, by contrast, renders its bytecode size, because
+nothing about it is private.
 
 Reproduce either result:
 
