@@ -40,7 +40,7 @@ then printed "transcript matches the film".
 ## Which commit the film shows
 
 The film was shot at
-[`7f0530e`](https://github.com/edenbd1/lp-0003-private-airdrop-distributor/commit/7f0530e66d073db1c32e32ce6be05065d882262c)
+[`8267c22`](https://github.com/edenbd1/lp-0003-private-airdrop-distributor/commit/8267c22696f7e0fd5b56da53cdb80bd0065a9e9f)
 and shows that hash on screen in its opening seconds, over a clean tree. The
 reviewed commit is later, because the transcript of a film can only be committed
 after the film exists. What separates them is nineteen files and 1,665 lines, and the honest
