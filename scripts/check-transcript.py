@@ -55,7 +55,20 @@ WINDOW = 25.0        # how far either side of a cue an anchor may appear on scre
 ANCHORS = {
     "lp-0003-claim-and-double-claim.srt": [
         ("dev mode is 0",           r"DEV_MODE\s*=\s*[0@oO]"),
-        ("Five checks",             r"\[\s*[1-5]\s*/\s*5\s*\]|VERIFIED"),
+        # Six, et sans porte de sortie. La branche `|VERIFIED` qui suivait
+        # autrefois ce motif faisait qu'au jour où le script est passé de cinq
+        # étapes à six, `[n/5]` a cessé de correspondre et l'ancre s'est rabattue
+        # en silence sur le seul mot VERIFIED : verte, et ne testant plus rien du
+        # compte d'étapes. Une ancre qui a deux façons de réussir n'en teste
+        # aucune.
+        # Ancré sur le TEXTE de l'étape de jointure, pas sur le compteur entre
+        # crochets. Mesuré sur le film : `[1/6]` n'est lisible qu'une seconde —
+        # le terminal défile — tandis que la ligne « that marker PDA is one of
+        # the accounts THIS transaction touched » reste 43 secondes. Ancrer sur
+        # un compteur qui passe en un éclair, c'est ancrer sur un coup de chance.
+        # Et c'est l'étape 5 : celle qui joint les deux moitiés, dont la
+        # narration parle nommément.
+        ("Six checks",              r"accounts THIS transaction|owned by the verifier program"),
         ("marker already exists",   r"AccountAlreadyInitialized"),
         ("public LEZ testnet",      r"testnet\.lez\.logos\.co"),
     ],
